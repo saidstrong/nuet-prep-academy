@@ -1,0 +1,97 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  TUTOR
+  OWNER
+}
+
+enum CourseStatus {
+  ACTIVE
+  INACTIVE
+  DRAFT
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String
+  role          UserRole  @default(STUDENT)
+  bio           String?
+  phone         String?
+  avatar        String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  profile       Profile?
+  studentEnrollments CourseEnrollment[] @relation("StudentEnrollments")
+  tutorEnrollments   CourseEnrollment[] @relation("TutorEnrollments")
+  courses       Course[]           @relation("CourseCreator")
+
+  @@map("users")
+}
+
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  bio         String?
+  phone       String?
+  avatar      String?
+  address     String?
+  education   String?
+  experience  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model Course {
+  id          String       @id @default(cuid())
+  title       String
+  description String
+  price       Float
+  duration    String
+  status      CourseStatus @default(ACTIVE)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relations
+  creatorId   String
+  creator     User         @relation("CourseCreator", fields: [creatorId], references: [id])
+  enrollments CourseEnrollment[]
+
+  @@map("courses")
+}
+
+model CourseEnrollment {
+  id        String   @id @default(cuid())
+  courseId  String
+  studentId String
+  tutorId   String
+  enrolledAt DateTime @default(now())
+  status    String   @default("ACTIVE") // ACTIVE, COMPLETED, DROPPED
+
+  // Relations
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student   User     @relation("StudentEnrollments", fields: [studentId], references: [id], onDelete: Cascade)
+  tutor     User     @relation("TutorEnrollments", fields: [tutorId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, studentId])
+  @@map("course_enrollments")
+}
