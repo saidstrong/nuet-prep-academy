@@ -1,5 +1,6 @@
 "use client";
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState } from 'react';
 
 export default function Header() {
@@ -8,7 +9,7 @@ export default function Header() {
     <header className="border-b border-slate-200/60 sticky top-0 z-40 bg-white/80 backdrop-blur">
       <div className="container-section py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3">
-          <img src="/logo.svg" alt="NUET Prep Academy" className="h-8 w-auto" />
+          <Image src="/logo.png?v=2" alt="NUET Prep Academy logo" width={112} height={32} priority />
           <span className="text-primary font-semibold text-lg sm:text-xl">NUET Prep Academy</span>
         </Link>
         <nav className="hidden md:flex gap-6 text-slate-700">
