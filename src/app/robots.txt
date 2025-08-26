@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Sitemap: https://nuet-prep.example.com/sitemap.xml
+

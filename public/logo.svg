@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="40" viewBox="0 0 160 40" role="img" aria-label="NUET Prep Academy">
+  <rect width="160" height="40" rx="8" fill="#1E3A8A"/>
+  <text x="16" y="26" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif" font-size="18" font-weight="700" fill="#ffffff">NUET</text>
+  <circle cx="140" cy="20" r="10" fill="#F59E0B"/>
+</svg>
+
