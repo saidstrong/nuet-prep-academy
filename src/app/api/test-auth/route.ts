@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
+  let prisma: any = null;
+  
   try {
     // Lazy import to prevent build-time issues
-    const { prisma } = await import('@/lib/prisma');
-    const bcrypt = await import('bcryptjs');
+    const { prisma: prismaClient } = await import('@/lib/prisma');
+    prisma = prismaClient;
     
     console.log('🔍 Testing authentication process...');
     
@@ -21,6 +23,7 @@ export async function GET() {
     }
     
     // Test password verification
+    const bcrypt = await import('bcryptjs');
     const testPassword = 'owner123';
     const isPasswordValid = await bcrypt.compare(testPassword, owner.password);
     
@@ -48,5 +51,13 @@ export async function GET() {
       message: 'Authentication test failed',
       error: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
+  } finally {
+    if (prisma) {
+      try {
+        await prisma.$disconnect();
+      } catch (e) {
+        // Ignore disconnect errors
+      }
+    }
   }
 }
