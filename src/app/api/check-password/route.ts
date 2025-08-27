@@ -7,7 +7,7 @@ export async function GET() {
     const nextAuthUrl = process.env.NEXTAUTH_URL;
     
     // Check if we can parse the database URL
-    let dbInfo = 'Not set';
+    let dbInfo: string | object = 'Not set';
     if (databaseUrl) {
       try {
         const url = new URL(databaseUrl);
