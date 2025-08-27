@@ -4,22 +4,11 @@ export async function GET() {
   try {
     console.log('🔌 Testing direct database connection...');
     
-    // Try to connect using a direct connection approach
-    // This bypasses the connection pooler issues
+    // Use the existing prisma instance instead of creating a new one
+    // This avoids the import issue
     
     // Lazy import to prevent build-time issues
-    const { PrismaClient } = await import('@/lib/prisma');
-    
-    // Create a new Prisma client with direct connection settings
-    const prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: process.env.DATABASE_URL,
-        },
-      },
-      // Force new connection
-      log: ['error'],
-    });
+    const { prisma } = await import('@/lib/prisma');
     
     try {
       // Test connection
