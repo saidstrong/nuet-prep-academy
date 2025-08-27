@@ -11,15 +11,17 @@ export async function GET() {
     const hasCorrectPort = databaseUrl?.includes(':6543');
     const hasPooler = databaseUrl?.includes('pgbouncer=true');
     
+    // Force new deployment to pick up updated environment variables
     return NextResponse.json({
       success: true,
-      message: 'Environment variables check',
+      message: 'Environment variables check - Updated deployment',
       databaseUrl: databaseUrl ? `${databaseUrl.substring(0, 50)}...` : 'NOT SET',
       nextAuthUrl: nextAuthUrl || 'NOT SET',
       nextAuthSecret: nextAuthSecret ? 'SET' : 'NOT SET',
       hasCorrectPort,
       hasPooler,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      deployment: 'Updated to force new build'
     });
     
   } catch (error) {
