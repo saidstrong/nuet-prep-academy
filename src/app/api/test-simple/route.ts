@@ -11,17 +11,24 @@ export async function GET() {
     const hasCorrectPort = databaseUrl?.includes(':6543');
     const hasPooler = databaseUrl?.includes('pgbouncer=true');
     
-    // Force new deployment to pick up updated environment variables
+    // Check for any environment variables
+    const allEnvVars = Object.keys(process.env).filter(key => 
+      key.includes('DATABASE') || 
+      key.includes('NEXT') || 
+      key.includes('SUPABASE')
+    );
+    
     return NextResponse.json({
       success: true,
-      message: 'Environment variables check - Updated deployment',
+      message: 'Environment variables check - Debug mode',
       databaseUrl: databaseUrl ? `${databaseUrl.substring(0, 50)}...` : 'NOT SET',
       nextAuthUrl: nextAuthUrl || 'NOT SET',
       nextAuthSecret: nextAuthSecret ? 'SET' : 'NOT SET',
       hasCorrectPort,
       hasPooler,
+      allDatabaseRelatedVars: allEnvVars,
       timestamp: new Date().toISOString(),
-      deployment: 'Updated to force new build'
+      deployment: 'Debug mode - checking all env vars'
     });
     
   } catch (error) {
