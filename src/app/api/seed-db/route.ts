@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
 
+export async function GET() {
+  return await seedDatabase();
+}
+
 export async function POST() {
+  return await seedDatabase();
+}
+
+async function seedDatabase() {
   try {
     // Lazy import to prevent build-time issues
     const { prisma } = await import('@/lib/prisma');
