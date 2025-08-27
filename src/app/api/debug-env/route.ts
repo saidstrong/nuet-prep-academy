@@ -10,7 +10,7 @@ export async function GET() {
     const nextAuthSecret = process.env.NEXTAUTH_SECRET;
     
     // Parse the database URL to show details
-    let connectionDetails = 'Not set';
+    let connectionDetails: string | object = 'Not set';
     let parsedUrl = null;
     
     if (databaseUrl) {
@@ -32,7 +32,7 @@ export async function GET() {
     }
     
     // Check if we can reach the hostname (basic connectivity test)
-    let connectivityTest = 'Not tested';
+    let connectivityTest: string | object = 'Not tested';
     if (parsedUrl) {
       try {
         // This is a basic test - we can't actually connect to the database
