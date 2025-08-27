@@ -7,8 +7,8 @@ export async function GET() {
     // Create a direct connection to Supabase (bypassing the pooler)
     const { PrismaClient } = await import('@prisma/client');
     
-    // Build direct connection URL (port 5432, no pooler)
-    const directUrl = "postgresql://postgres:Saltanat_1980@db.mokrzgcbweenzmxlkcoo.supabase.co:5432/postgres?sslmode=require";
+    // Build direct connection URL (port 5432, no pooler) - CORRECT PASSWORD
+    const directUrl = "postgresql://postgres:Saltanat_1980_@db.mokrzgcbweenzmxlkcoo.supabase.co:5432/postgres?sslmode=require";
     
     console.log('🔗 Testing direct connection URL:', directUrl.substring(0, 50) + '...');
     
