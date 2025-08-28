@@ -1,0 +1,131 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: nuet-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nuet_prep_academy
+      POSTGRES_USER: nuet_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - nuet-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nuet_user -d nuet_prep_academy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    container_name: nuet-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - nuet-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # NUET Prep Academy Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nuet-app
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://nuet_user:${POSTGRES_PASSWORD}@postgres:5432/nuet_prep_academy
+      - REDIS_URL=redis://redis:6379
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - FROM_EMAIL=${FROM_EMAIL}
+      - KASPI_MERCHANT_ID=${KASPI_MERCHANT_ID}
+      - KASPI_API_KEY=${KASPI_API_KEY}
+      - KASPI_WEBHOOK_SECRET=${KASPI_WEBHOOK_SECRET}
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - nuet-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: nuet-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - app
+    networks:
+      - nuet-network
+
+  # Certbot for SSL certificates
+  certbot:
+    image: certbot/certbot
+    container_name: nuet-certbot
+    volumes:
+      - ./nginx/ssl:/etc/letsencrypt
+      - ./nginx/webroot:/var/www/html
+    command: certonly --webroot --webroot-path=/var/www/html --email ${CERTBOT_EMAIL} --agree-tos --no-eff-email -d ${DOMAIN_NAME}
+    networks:
+      - nuet-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  nginx_logs:
+    driver: local
+
+networks:
+  nuet-network:
+    driver: bridge
+
+# Environment variables (create .env file)
+# POSTGRES_PASSWORD=your_secure_password
+# NEXTAUTH_URL=https://yourdomain.com
+# NEXTAUTH_SECRET=your_secret_key
+# NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+# NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
+# RESEND_API_KEY=your_resend_key
+# FROM_EMAIL=noreply@yourdomain.com
+# KASPI_MERCHANT_ID=your_kaspi_id
+# KASPI_API_KEY=your_kaspi_key
+# KASPI_WEBHOOK_SECRET=your_webhook_secret
+# CERTBOT_EMAIL=admin@yourdomain.com
+# DOMAIN_NAME=yourdomain.com

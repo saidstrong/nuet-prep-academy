@@ -4,33 +4,39 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding database...');
+  console.log('🌱 Starting database seed...');
 
-  // Create owner account
-  const hashedPassword = await bcrypt.hash('owner123', 12);
-  
-  const owner = await prisma.user.upsert({
-    where: { email: 'owner@nuetprep.academy' },
+  // Hash password for admin user
+  const hashedPassword = await bcrypt.hash('admin123', 12);
+
+  // Create admin user
+  const adminUser = await prisma.user.upsert({
+    where: { email: 'admin@nuetprepacademy.com' },
     update: {},
     create: {
-      email: 'owner@nuetprep.academy',
+      email: 'admin@nuetprepacademy.com',
       name: 'Said Amanzhol',
       password: hashedPassword,
-      role: 'OWNER',
+      role: 'ADMIN',
     },
   });
 
-  // Create owner profile
+  console.log('✅ Admin user created:', adminUser.email);
+
+  // Create admin profile
   await prisma.profile.upsert({
-    where: { userId: owner.id },
+    where: { userId: adminUser.id },
     update: {},
     create: {
-      userId: owner.id,
-      bio: 'Founder and owner of NUET Prep Academy',
+      userId: adminUser.id,
+      bio: 'Founder and admin of NUET Prep Academy',
       phone: '+77075214911',
-      address: 'Astana, Kabanbay Batyr avenue, 53. Nazarbayev University',
+      whatsapp: '+77075214911',
+      experience: '5+ years in education',
     },
   });
+
+  console.log('✅ Admin profile created');
 
   // Create sample courses
   const course1 = await prisma.course.upsert({
@@ -42,7 +48,9 @@ async function main() {
       description: '60,000 ₸ for 6 months. Math, Critical Thinking, English. Weekday online lessons for new topics. Saturday full sample test on the website; Sunday review with solutions and feedback.',
       price: 60000,
       duration: '6 months',
-      creatorId: owner.id,
+      status: 'ACTIVE',
+      maxStudents: 30,
+      creatorId: adminUser.id,
     },
   });
 
@@ -55,7 +63,9 @@ async function main() {
       description: '40,000 ₸ for 2 months. All topics, content, and problem sets with detailed solutions for self-prep, plus a full sample exam.',
       price: 40000,
       duration: '2 months',
-      creatorId: owner.id,
+      status: 'ACTIVE',
+      maxStudents: 25,
+      creatorId: adminUser.id,
     },
   });
 
@@ -68,16 +78,46 @@ async function main() {
       description: '80,000 ₸ per month. Daily 1-hour online sessions with the tutor focused on new topics.',
       price: 80000,
       duration: 'Monthly',
-      creatorId: owner.id,
+      status: 'ACTIVE',
+      maxStudents: 1,
+      creatorId: adminUser.id,
     },
   });
 
-  console.log('✅ Database seeded successfully!');
-  console.log('👤 Owner account created:');
-  console.log(`   Email: owner@nuetprep.academy`);
-  console.log(`   Password: owner123`);
-  console.log(`   Role: ${owner.role}`);
-  console.log('📚 Sample courses created:', [course1.title, course2.title, course3.title].join(', '));
+  console.log('✅ Sample courses created:', [course1.title, course2.title, course3.title].join(', '));
+
+  // Create sample topics for course 1
+  const topic1 = await prisma.topic.upsert({
+    where: { id: 'topic-1' },
+    update: {},
+    create: {
+      id: 'topic-1',
+      title: 'Mathematics Fundamentals',
+      description: 'Core mathematical concepts and problem-solving techniques',
+      order: 1,
+      courseId: course1.id,
+    },
+  });
+
+  const topic2 = await prisma.topic.upsert({
+    where: { id: 'topic-2' },
+    update: {},
+    create: {
+      id: 'topic-2',
+      title: 'Critical Thinking',
+      description: 'Logical reasoning and analytical skills development',
+      order: 2,
+      courseId: course1.id,
+    },
+  });
+
+  console.log('✅ Sample topics created');
+
+  console.log('🎉 Database seeding completed successfully!');
+  console.log('👤 Admin account created:');
+  console.log(`   Email: admin@nuetprepacademy.com`);
+  console.log(`   Password: admin123`);
+  console.log(`   Role: ${adminUser.role}`);
 }
 
 main()

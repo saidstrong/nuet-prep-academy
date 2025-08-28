@@ -16,49 +16,49 @@ async function seedDatabase() {
     
     console.log('🌱 Seeding Supabase database...');
     
-    // Check if owner already exists
-    const existingOwner = await prisma.user.findUnique({
-      where: { email: 'owner@nuetprep.academy' }
+        // Check if admin already exists
+    const existingAdmin = await prisma.user.findUnique({
+      where: { email: 'admin@nuetprep.academy' }
     });
-    
-    if (existingOwner) {
-      console.log('✅ Owner account already exists');
+
+    if (existingAdmin) {
+      console.log('✅ Admin account already exists');
       return NextResponse.json({
         success: true,
-        message: 'Owner account already exists',
-        ownerId: existingOwner.id,
-        ownerName: existingOwner.name,
-        ownerRole: existingOwner.role
+        message: 'Admin account already exists',
+        adminId: existingAdmin.id,
+        adminName: existingAdmin.name,
+        adminRole: existingAdmin.role
       });
     }
-    
-    // Create owner account
-    const hashedPassword = await bcrypt.hash('owner123', 12);
-    
-    const owner = await prisma.user.create({
+
+    // Create admin account
+    const hashedPassword = await bcrypt.hash('admin123', 12);
+
+    const admin = await prisma.user.create({
       data: {
-        email: 'owner@nuetprep.academy',
+        email: 'admin@nuetprep.academy',
         name: 'Said Amanzhol',
         password: hashedPassword,
-        role: 'OWNER',
+        role: 'ADMIN',
         profile: {
           create: {
-            bio: 'Founder and owner of NUET Prep Academy',
+            bio: 'Founder and admin of NUET Prep Academy',
             phone: '+77075214911',
-            address: 'Astana, Kabanbay Batyr avenue, 53. Nazarbayev University',
+            experience: '5+ years in education',
           }
         }
       }
     });
     
-    console.log('✅ Owner account created successfully');
+    console.log('✅ Admin account created successfully');
     
     return NextResponse.json({
       success: true,
-      message: 'Owner account created successfully',
-      ownerId: owner.id,
-      ownerName: owner.name,
-      ownerRole: owner.role
+      message: 'Admin account created successfully',
+      adminId: admin.id,
+      adminName: admin.name,
+      adminRole: admin.role
     });
     
   } catch (error) {

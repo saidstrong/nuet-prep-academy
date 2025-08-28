@@ -15,13 +15,13 @@ export async function GET() {
     const userCount = await prisma.user.count();
     console.log(`📊 Users found: ${userCount}`);
     
-    // Test finding owner account
-    const owner = await prisma.user.findFirst({
-      where: { role: 'OWNER' },
+    // Test finding admin account
+    const admin = await prisma.user.findFirst({
+      where: { role: 'ADMIN' },
       select: { id: true, email: true, name: true, role: true }
     });
     
-    console.log('✅ Owner account found:', owner ? 'Yes' : 'No');
+    console.log('✅ Admin account found:', admin ? 'Yes' : 'No');
     
     // Test course count
     const courseCount = await prisma.course.count();
@@ -31,8 +31,8 @@ export async function GET() {
       success: true,
       message: 'Database is working perfectly!',
       userCount,
-      ownerFound: !!owner,
-      ownerEmail: owner?.email || 'Not found',
+      adminFound: !!admin,
+      adminEmail: admin?.email || 'Not found',
       courseCount,
       timestamp: new Date().toISOString(),
       note: 'Authentication should work now!'

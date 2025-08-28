@@ -15,53 +15,53 @@ export async function GET() {
     const userCount = await prisma.user.count();
     console.log(`📊 Users table exists, count: ${userCount}`);
     
-    // Check for owner account
-    const owner = await prisma.user.findUnique({
-      where: { email: 'owner@nuetprep.academy' }
+    // Check for admin account
+    const admin = await prisma.user.findUnique({
+      where: { email: 'admin@nuetprep.academy' }
     });
     
-    if (owner) {
-      console.log('✅ Owner account exists');
+    if (admin) {
+      console.log('✅ Admin account exists');
       return NextResponse.json({
         success: true,
-        message: 'Database setup complete - Owner account exists',
+        message: 'Database setup complete - Admin account exists',
         userCount,
-        ownerId: owner.id,
-        ownerName: owner.name,
-        ownerRole: owner.role
+        adminId: admin.id,
+        adminName: admin.name,
+        adminRole: admin.role
       });
     }
     
-    // Create owner account if it doesn't exist
-    console.log('❌ Owner account not found - creating it now...');
+    // Create admin account if it doesn't exist
+    console.log('❌ Admin account not found - creating it now...');
     const bcrypt = await import('bcryptjs');
-    const hashedPassword = await bcrypt.hash('owner123', 12);
+    const hashedPassword = await bcrypt.hash('admin123', 12);
     
-    const newOwner = await prisma.user.create({
+    const newAdmin = await prisma.user.create({
       data: {
-        email: 'owner@nuetprep.academy',
+        email: 'admin@nuetprep.academy',
         name: 'Said Amanzhol',
         password: hashedPassword,
-        role: 'OWNER',
+        role: 'ADMIN',
         profile: {
           create: {
-            bio: 'Founder and owner of NUET Prep Academy',
+            bio: 'Founder and admin of NUET Prep Academy',
             phone: '+77075214911',
-            address: 'Astana, Kabanbay Batyr avenue, 53. Nazarbayev University',
+            experience: '5+ years in education',
           }
         }
       }
     });
     
-    console.log('✅ Owner account created successfully');
+    console.log('✅ Admin account created successfully');
     
     return NextResponse.json({
       success: true,
-      message: 'Database setup complete - Owner account created',
+      message: 'Database setup complete - Admin account created',
       userCount: userCount + 1,
-      ownerId: newOwner.id,
-      ownerName: newOwner.name,
-      ownerRole: newOwner.role
+      adminId: newAdmin.id,
+      adminName: newAdmin.name,
+      adminRole: newAdmin.role
     });
     
   } catch (error) {

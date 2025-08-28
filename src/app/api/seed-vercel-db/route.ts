@@ -8,42 +8,42 @@ export async function GET() {
     
     console.log('🌱 Seeding Vercel database...');
     
-    // Check if owner already exists
-    const existingOwner = await prisma.user.findUnique({
-      where: { email: 'owner@nuetprep.academy' }
+    // Check if admin already exists
+    const existingAdmin = await prisma.user.findUnique({
+      where: { email: 'admin@nuetprep.academy' }
     });
 
-    if (existingOwner) {
-      console.log('✅ Owner account already exists in Vercel database');
+    if (existingAdmin) {
+      console.log('✅ Admin account already exists in Vercel database');
       return NextResponse.json({
         success: true,
-        message: 'Owner account already exists in Vercel database',
-        ownerId: existingOwner.id,
-        ownerName: existingOwner.name,
-        ownerRole: existingOwner.role
+        message: 'Admin account already exists in Vercel database',
+        adminId: existingAdmin.id,
+        adminName: existingAdmin.name,
+        adminRole: existingAdmin.role
       });
     }
 
-    // Create owner account in Vercel database
-    const hashedPassword = await bcrypt.hash('owner123', 12);
+    // Create admin account in Vercel database
+    const hashedPassword = await bcrypt.hash('admin123', 12);
 
-    const owner = await prisma.user.create({
+    const admin = await prisma.user.create({
       data: {
-        email: 'owner@nuetprep.academy',
+        email: 'admin@nuetprep.academy',
         name: 'Said Amanzhol',
         password: hashedPassword,
-        role: 'OWNER',
+        role: 'ADMIN',
         profile: {
           create: {
-            bio: 'Founder and owner of NUET Prep Academy',
+            bio: 'Founder and admin of NUET Prep Academy',
             phone: '+77075214911',
-            address: 'Astana, Kabanbay Batyr avenue, 53. Nazarbayev University',
+            experience: '5+ years in education',
           }
         }
       }
     });
 
-    console.log('✅ Owner account created in Vercel database');
+    console.log('✅ Admin account created in Vercel database');
 
     // Create sample courses in Vercel database
     const course1 = await prisma.course.create({
@@ -52,7 +52,8 @@ export async function GET() {
         description: '60,000 ₸ for 6 months. Math, Critical Thinking, English. Weekday online lessons for new topics. Saturday full sample test on the website; Sunday review with solutions and feedback.',
         price: 60000,
         duration: '6 months',
-        creatorId: owner.id,
+        maxStudents: 30,
+        creatorId: admin.id,
       }
     });
 
@@ -62,7 +63,8 @@ export async function GET() {
         description: '40,000 ₸ for 2 months. All topics, content, and problem sets with detailed solutions for self-prep, plus a full sample exam.',
         price: 40000,
         duration: '2 months',
-        creatorId: owner.id,
+        maxStudents: 25,
+        creatorId: admin.id,
       }
     });
 
@@ -72,7 +74,8 @@ export async function GET() {
         description: '80,000 ₸ per month. Daily 1-hour online sessions with the tutor focused on new topics.',
         price: 80000,
         duration: 'Monthly',
-        creatorId: owner.id,
+        maxStudents: 1,
+        creatorId: admin.id,
       }
     });
 
@@ -81,11 +84,11 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       message: 'Vercel database seeded successfully!',
-      ownerId: owner.id,
-      ownerName: owner.name,
-      ownerRole: owner.role,
+      adminId: admin.id,
+      adminName: admin.name,
+      adminRole: admin.role,
       coursesCreated: [course1.title, course2.title, course3.title],
-      note: 'Now try logging in with owner@nuetprep.academy / owner123'
+      note: 'Now try logging in with admin@nuetprep.academy / admin123'
     });
 
   } catch (error) {

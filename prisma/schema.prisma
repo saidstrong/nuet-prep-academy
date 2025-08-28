@@ -11,87 +11,306 @@ datasource db {
 }
 
 enum UserRole {
-  STUDENT
+  ADMIN
   TUTOR
-  OWNER
+  STUDENT
 }
 
 enum CourseStatus {
+  DRAFT
   ACTIVE
   INACTIVE
-  DRAFT
+  ARCHIVED
+}
+
+enum EnrollmentStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  KASPI
+  CARD
+  BANK_TRANSFER
+}
+
+enum MaterialType {
+  PDF
+  VIDEO
+  AUDIO
+  LINK
+  TEXT
+}
+
+enum ChatType {
+  DIRECT
+  GROUP
+  COURSE
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  SYSTEM
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  password      String
+  id            String   @id @default(cuid())
   name          String
-  role          UserRole  @default(STUDENT)
-  bio           String?
-  phone         String?
-  avatar        String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  email         String   @unique
+  password      String
+  role          UserRole @default(STUDENT)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  // Relations
-  profile       Profile?
+  // Profile
+  profile Profile?
+
+  // Course relations
+  courses       Course[]           @relation("CourseCreator")
+  assignedCourses Course[]         @relation("TutorAssignments")
+  
+  // Enrollment relations
   studentEnrollments CourseEnrollment[] @relation("StudentEnrollments")
   tutorEnrollments   CourseEnrollment[] @relation("TutorEnrollments")
-  courses       Course[]           @relation("CourseCreator")
-
-  @@map("users")
+  
+  // Chat relations
+  chatParticipants ChatParticipant[]
+  messages         Message[]
+  
+  // Test relations
+  testSubmissions TestSubmission[]
+  
+  // Payment relations
+  payments Payment[]
 }
 
 model Profile {
   id          String   @id @default(cuid())
-  userId      String   @unique
   bio         String?
   phone       String?
-  avatar      String?
-  address     String?
-  education   String?
+  whatsapp    String?
   experience  String?
+  avatar      String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("profiles")
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
 }
 
 model Course {
-  id          String       @id @default(cuid())
+  id          String   @id @default(cuid())
   title       String
   description String
   price       Float
   duration    String
-  status      CourseStatus @default(ACTIVE)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  status      CourseStatus @default(DRAFT)
+  maxStudents Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
-  creatorId   String
-  creator     User         @relation("CourseCreator", fields: [creatorId], references: [id])
+  creatorId String
+  creator   User   @relation("CourseCreator", fields: [creatorId], references: [id])
+  
   enrollments CourseEnrollment[]
+  assignedTutors User[] @relation("TutorAssignments")
+  topics      Topic[]
+  
+  // Chat relation
+  chats      Chat[]
+  
+  // Payment relation
+  payments   Payment[]
+}
 
-  @@map("courses")
+model Topic {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  order       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  courseId String
+  course   Course  @relation(fields: [courseId], references: [id])
+  
+  materials Material[]
+  tests     Test[]
+}
+
+model Material {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  type        MaterialType
+  url         String?
+  content     String?
+  order       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  topicId String
+  topic   Topic  @relation(fields: [topicId], references: [id])
+}
+
+model Test {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  duration    Int      // in minutes
+  totalPoints Int
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  topicId String
+  topic   Topic  @relation(fields: [topicId], references: [id])
+  
+  questions   Question[]
+  submissions TestSubmission[]
+}
+
+model Question {
+  id          String   @id @default(cuid())
+  text        String
+  type        String   @default("MULTIPLE_CHOICE")
+  order       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  testId String
+  test   Test    @relation(fields: [testId], references: [id])
+  
+  options QuestionOption[]
+}
+
+model QuestionOption {
+  id          String   @id @default(cuid())
+  text        String
+  isCorrect   Boolean  @default(false)
+  order       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id])
 }
 
 model CourseEnrollment {
-  id        String   @id @default(cuid())
-  courseId  String
-  studentId String
-  tutorId   String
-  enrolledAt DateTime @default(now())
-  status    String   @default("ACTIVE") // ACTIVE, COMPLETED, DROPPED
+  id            String           @id @default(cuid())
+  status        EnrollmentStatus @default(PENDING)
+  paymentStatus PaymentStatus    @default(PENDING)
+  enrolledAt    DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
   // Relations
-  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  student   User     @relation("StudentEnrollments", fields: [studentId], references: [id], onDelete: Cascade)
-  tutor     User     @relation("TutorEnrollments", fields: [tutorId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    Course @relation(fields: [courseId], references: [id])
+  
+  studentId String
+  student   User   @relation("StudentEnrollments", fields: [studentId], references: [id])
+  
+  tutorId   String
+  tutor     User   @relation("TutorEnrollments", fields: [tutorId], references: [id])
+  
+  payments  Payment[]
+}
 
-  @@unique([courseId, studentId])
-  @@map("course_enrollments")
+model Payment {
+  id        String        @id @default(cuid())
+  amount    Float
+  method    PaymentMethod
+  status    PaymentStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  // Relations
+  enrollmentId String
+  enrollment   CourseEnrollment @relation(fields: [enrollmentId], references: [id])
+  
+  studentId String
+  student   User   @relation(fields: [studentId], references: [id])
+  
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id])
+}
+
+model Chat {
+  id        String   @id @default(cuid())
+  name      String
+  type      ChatType
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  courseId String?
+  course   Course? @relation(fields: [courseId], references: [id])
+  
+  participants ChatParticipant[]
+  messages     Message[]
+}
+
+model ChatParticipant {
+  id        String   @id @default(cuid())
+  joinedAt  DateTime @default(now())
+  leftAt    DateTime?
+
+  // Relations
+  chatId String
+  chat   Chat   @relation(fields: [chatId], references: [id])
+  
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Message {
+  id        String      @id @default(cuid())
+  content   String
+  type      MessageType @default(TEXT)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  // Relations
+  chatId String
+  chat   Chat   @relation(fields: [chatId], references: [id])
+  
+  senderId String
+  sender   User   @relation(fields: [senderId], references: [id])
+}
+
+model TestSubmission {
+  id         String   @id @default(cuid())
+  answers    Json
+  score      Int
+  maxScore   Int
+  timeSpent  Int      // in seconds
+  status     String
+  submittedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  testId String
+  test   Test   @relation(fields: [testId], references: [id])
+  
+  studentId String
+  student   User   @relation(fields: [studentId], references: [id])
 }

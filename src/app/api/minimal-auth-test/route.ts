@@ -12,13 +12,13 @@ export async function GET() {
     await prisma.$connect();
     console.log('✅ Connected to database');
     
-    // Try to find the owner account
-    const owner = await prisma.user.findFirst({
-      where: { role: 'OWNER' },
+    // Try to find the admin account
+    const admin = await prisma.user.findFirst({
+      where: { role: 'ADMIN' },
       select: { id: true, email: true, name: true, role: true }
     });
     
-    console.log('✅ Owner account found:', owner ? 'Yes' : 'No');
+    console.log('✅ Admin account found:', admin ? 'Yes' : 'No');
     
     // Always disconnect
     await prisma.$disconnect();
@@ -26,8 +26,8 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       message: 'Minimal authentication test successful',
-      ownerFound: !!owner,
-      ownerEmail: owner?.email || 'Not found',
+      adminFound: !!admin,
+      adminEmail: admin?.email || 'Not found',
       timestamp: new Date().toISOString(),
       note: 'This test used a fresh Prisma instance to avoid connection conflicts'
     });
