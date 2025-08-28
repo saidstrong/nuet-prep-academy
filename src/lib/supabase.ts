@@ -185,3 +185,4 @@ export const markNotificationAsRead = async (notificationId: string) => {
   if (error) throw error;
   return data;
 };
+"// Updated Supabase config" 
