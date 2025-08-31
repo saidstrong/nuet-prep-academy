@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import CourseCreationModal from '@/components/CourseCreationModal';
@@ -296,7 +297,14 @@ export default function AdminDashboard() {
                         <tr key={course.id}>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div>
-                              <div className="text-sm font-medium text-gray-900">{course.title}</div>
+                              <div className="text-sm font-medium text-gray-900">
+                                <Link 
+                                  href={`/admin/courses/${course.id}`}
+                                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                                >
+                                  {course.title}
+                                </Link>
+                              </div>
                               <div className="text-sm text-gray-500">{course.description.substring(0, 50)}...</div>
                             </div>
                           </td>
