@@ -134,12 +134,12 @@ export async function POST(request: Request) {
     // Create payment record
     const payment = await prisma.payment.create({
       data: {
-        userId: studentId,
+        enrollmentId: enrollment.id,
+        studentId,
         courseId,
         amount: course.price,
         method: paymentMethod,
-        status: 'PAID',
-        paidAt: new Date()
+        status: 'PAID'
       }
     });
 
