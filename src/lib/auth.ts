@@ -25,10 +25,29 @@ export const authOptions: NextAuthOptions = {
           await prisma.$connect();
           console.log("✅ Database connected successfully in NextAuth");
           
+          // Test basic database functionality first
+          console.log("🧪 Testing basic database query...");
+          const userCount = await prisma.user.count();
+          console.log("✅ User count query successful:", userCount);
+          
+          // Now try to find the specific user
+          console.log("🔍 Looking for user with email:", credentials.email);
           const user = await prisma.user.findUnique({
-            where: { email: credentials.email },
-            include: { profile: true }
+            where: { email: credentials.email }
           });
+          
+          if (user) {
+            console.log("✅ User found with basic query");
+            // Try to get profile separately to avoid include issues
+            try {
+              const profile = await prisma.profile.findUnique({
+                where: { userId: user.id }
+              });
+              console.log("✅ Profile query successful:", profile ? "Profile exists" : "No profile");
+            } catch (profileError) {
+              console.log("⚠️ Profile query failed, continuing without profile:", profileError);
+            }
+          }
 
           if (!user) {
             console.log("❌ User not found for:", credentials.email);
