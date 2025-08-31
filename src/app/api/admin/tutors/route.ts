@@ -23,7 +23,7 @@ export async function GET() {
         role: 'TUTOR'
       },
       include: {
-        enrollments: {
+        tutorEnrollments: {
           where: {
             status: 'ACTIVE'
           },
@@ -52,13 +52,13 @@ export async function GET() {
     // Transform the data for the dashboard
     const transformedTutors = tutors.map(tutor => {
       // Get unique assigned courses
-      const assignedCourses = [...new Set(tutor.enrollments.map(enrollment => enrollment.course.id))];
+      const assignedCourses = [...new Set(tutor.tutorEnrollments.map(enrollment => enrollment.course.id))];
       
       // Count total students across all courses
-      const totalStudents = tutor.enrollments.length;
+      const totalStudents = tutor.tutorEnrollments.length;
       
       // Get course details
-      const courseDetails = tutor.enrollments.map(enrollment => ({
+      const courseDetails = tutor.tutorEnrollments.map(enrollment => ({
         courseId: enrollment.course.id,
         courseTitle: enrollment.course.title,
         studentCount: 1 // Each enrollment represents one student

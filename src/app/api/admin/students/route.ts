@@ -23,7 +23,7 @@ export async function GET() {
         role: 'STUDENT'
       },
       include: {
-        enrollments: {
+        studentEnrollments: {
           where: {
             status: 'ACTIVE'
           },
@@ -53,13 +53,13 @@ export async function GET() {
     // Transform the data for the dashboard
     const transformedStudents = students.map(student => {
       // Get unique enrolled courses
-      const enrolledCourses = [...new Set(student.enrollments.map(enrollment => enrollment.course.id))];
+      const enrolledCourses = [...new Set(student.studentEnrollments.map(enrollment => enrollment.course.id))];
       
       // Count total enrollments
-      const totalEnrollments = student.enrollments.length;
+      const totalEnrollments = student.studentEnrollments.length;
       
       // Get course details
-      const courseDetails = student.enrollments.map(enrollment => ({
+      const courseDetails = student.studentEnrollments.map(enrollment => ({
         courseId: enrollment.course.id,
         courseTitle: enrollment.course.title,
         coursePrice: enrollment.course.price,
