@@ -54,9 +54,9 @@ export default function Header() {
                   </Link>
                 )}
                 {session.user.role === 'TUTOR' && (
-                  <Link href="/tutor" className="text-slate-700 hover:text-primary transition-colors flex items-center space-x-1">
+                  <Link href="/tutor/dashboard" className="text-slate-700 hover:text-primary transition-colors flex items-center space-x-1">
                     <BookOpen className="w-4 h-4" />
-                    <span>Tutor Panel</span>
+                    <span>Tutor Dashboard</span>
                   </Link>
                 )}
               </>
