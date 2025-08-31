@@ -115,7 +115,7 @@ export async function POST(request: Request) {
         tutorId,
         studentId: 'placeholder', // This will be updated when actual students enroll
         status: 'ACTIVE',
-        paymentStatus: 'COMPLETED'
+        paymentStatus: 'PAID'
       }
     });
 
