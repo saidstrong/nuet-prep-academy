@@ -4,71 +4,94 @@ import { authOptions } from '@/lib/auth';
 
 export async function GET() {
   try {
+    // Check if user is authenticated and is admin
     const session = await getServerSession(authOptions);
     
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized - Admin access required' },
+        { status: 401 }
+      );
     }
 
+    // Lazy import to prevent build-time issues
     const { prisma } = await import('@/lib/prisma');
-
+    
+    // Fetch all tutors with their course assignments and student counts
     const tutors = await prisma.user.findMany({
       where: {
-        role: 'TUTOR',
+        role: 'TUTOR'
       },
       include: {
-        profile: {
-          select: {
-            id: true,
-            bio: true,
-            phone: true,
-            avatar: true,
-            whatsapp: true,
-            experience: true,
+        enrollments: {
+          where: {
+            status: 'ACTIVE'
           },
-        },
-        tutorEnrollments: {
           include: {
             course: {
               select: {
                 id: true,
-                title: true,
-                status: true,
-              },
+                title: true
+              }
             },
             student: {
               select: {
                 id: true,
                 name: true,
-                email: true,
-              },
-            },
-          },
-        },
-        assignedCourses: {
-          select: {
-            id: true,
-            title: true,
-            status: true,
-          },
-        },
+                email: true
+              }
+            }
+          }
+        }
       },
       orderBy: {
-        createdAt: 'desc',
-      },
+        name: 'asc'
+      }
+    });
+
+    // Transform the data for the dashboard
+    const transformedTutors = tutors.map(tutor => {
+      // Get unique assigned courses
+      const assignedCourses = [...new Set(tutor.enrollments.map(enrollment => enrollment.course.id))];
+      
+      // Count total students across all courses
+      const totalStudents = tutor.enrollments.length;
+      
+      // Get course details
+      const courseDetails = tutor.enrollments.map(enrollment => ({
+        courseId: enrollment.course.id,
+        courseTitle: enrollment.course.title,
+        studentCount: 1 // Each enrollment represents one student
+      }));
+
+      return {
+        id: tutor.id,
+        name: tutor.name,
+        email: tutor.email,
+        role: tutor.role,
+        assignedCourses: assignedCourses,
+        totalStudents,
+        courseDetails,
+        createdAt: tutor.createdAt,
+        updatedAt: tutor.updatedAt
+      };
     });
 
     return NextResponse.json({
       success: true,
-      tutors,
+      tutors: transformedTutors,
+      total: transformedTutors.length
     });
 
   } catch (error) {
-    console.error('Error fetching tutors:', error);
-    return NextResponse.json({
-      success: false,
-      message: 'An error occurred while fetching tutors',
-    }, { status: 500 });
+    console.error('Error fetching admin tutors:', error);
+    return NextResponse.json(
+      { 
+        error: 'Failed to fetch tutors',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
   }
 }
 

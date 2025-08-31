@@ -4,74 +4,99 @@ import { authOptions } from '@/lib/auth';
 
 export async function GET() {
   try {
+    // Check if user is authenticated and is admin
     const session = await getServerSession(authOptions);
     
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized - Admin access required' },
+        { status: 401 }
+      );
     }
 
+    // Lazy import to prevent build-time issues
     const { prisma } = await import('@/lib/prisma');
-
+    
+    // Fetch all students with their course enrollments
     const students = await prisma.user.findMany({
       where: {
-        role: 'STUDENT',
+        role: 'STUDENT'
       },
       include: {
-        profile: {
-          select: {
-            id: true,
-            bio: true,
-            phone: true,
-            avatar: true,
-            whatsapp: true,
-            experience: true,
+        enrollments: {
+          where: {
+            status: 'ACTIVE'
           },
-        },
-        studentEnrollments: {
           include: {
             course: {
               select: {
                 id: true,
                 title: true,
-                status: true,
-                price: true,
-              },
+                price: true
+              }
             },
             tutor: {
               select: {
                 id: true,
                 name: true,
-                email: true,
-              },
-            },
-          },
-        },
-        payments: {
-          select: {
-            id: true,
-            amount: true,
-            status: true,
-            method: true,
-            createdAt: true,
-          },
-        },
+                email: true
+              }
+            }
+          }
+        }
       },
       orderBy: {
-        createdAt: 'desc',
-      },
+        name: 'asc'
+      }
+    });
+
+    // Transform the data for the dashboard
+    const transformedStudents = students.map(student => {
+      // Get unique enrolled courses
+      const enrolledCourses = [...new Set(student.enrollments.map(enrollment => enrollment.course.id))];
+      
+      // Count total enrollments
+      const totalEnrollments = student.enrollments.length;
+      
+      // Get course details
+      const courseDetails = student.enrollments.map(enrollment => ({
+        courseId: enrollment.course.id,
+        courseTitle: enrollment.course.title,
+        coursePrice: enrollment.course.price,
+        tutorId: enrollment.tutor.id,
+        tutorName: enrollment.tutor.name,
+        tutorEmail: enrollment.tutor.email,
+        enrollmentDate: enrollment.enrolledAt
+      }));
+
+      return {
+        id: student.id,
+        name: student.name,
+        email: student.email,
+        role: student.role,
+        enrolledCourses: enrolledCourses,
+        totalEnrollments,
+        courseDetails,
+        createdAt: student.createdAt,
+        updatedAt: student.updatedAt
+      };
     });
 
     return NextResponse.json({
       success: true,
-      students,
+      students: transformedStudents,
+      total: transformedStudents.length
     });
 
   } catch (error) {
-    console.error('Error fetching students:', error);
-    return NextResponse.json({
-      success: false,
-      message: 'An error occurred while fetching students',
-    }, { status: 500 });
+    console.error('Error fetching admin students:', error);
+    return NextResponse.json(
+      { 
+        error: 'Failed to fetch students',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
   }
 }
 

@@ -47,10 +47,10 @@ export default function Header() {
                   <MessageCircle className="w-4 h-4" />
                   <span>Chat</span>
                 </Link>
-                {session.user.role === 'OWNER' && (
-                  <Link href="/admin" className="text-slate-700 hover:text-primary transition-colors flex items-center space-x-1">
+                {(session.user.role === 'OWNER' || session.user.role === 'ADMIN') && (
+                  <Link href="/admin/dashboard" className="text-slate-700 hover:text-primary transition-colors flex items-center space-x-1">
                     <Settings className="w-4 h-4" />
-                    <span>Admin</span>
+                    <span>Admin Dashboard</span>
                   </Link>
                 )}
                 {session.user.role === 'TUTOR' && (
@@ -149,13 +149,13 @@ export default function Header() {
                 >
                   Chat
                 </Link>
-                {session.user.role === 'OWNER' && (
+                {(session.user.role === 'OWNER' || session.user.role === 'ADMIN') && (
                   <Link
-                    href="/admin"
+                    href="/admin/dashboard"
                     className="block px-3 py-2 text-slate-700 hover:text-primary hover:bg-slate-50 rounded-md transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Admin Panel
+                    Admin Dashboard
                   </Link>
                 )}
                 {session.user.role === 'TUTOR' && (
