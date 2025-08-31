@@ -26,11 +26,6 @@ export async function POST(request: Request) {
     const test = await prisma.test.findUnique({
       where: { id: testId },
       include: {
-        questions: {
-          include: {
-            options: true,
-          },
-        },
         topic: {
           include: {
             course: {
@@ -41,6 +36,11 @@ export async function POST(request: Request) {
                     status: 'ACTIVE',
                   },
                 },
+              },
+            },
+            questions: {
+              include: {
+                options: true,
               },
             },
           },
@@ -88,10 +88,10 @@ export async function POST(request: Request) {
 
     // Calculate score
     let correctAnswers = 0;
-    const totalQuestions = test.questions.length;
+    const totalQuestions = test.topic.questions.length;
 
     for (const answer of answers) {
-      const question = test.questions.find(q => q.id === answer.questionId);
+      const question = test.topic.questions.find(q => q.id === answer.questionId);
       if (question) {
         const correctOption = question.options.find(option => option.isCorrect);
         if (correctOption && answer.selectedOptionId === correctOption.id) {
@@ -184,20 +184,6 @@ export async function GET(request: Request) {
     const test = await prisma.test.findUnique({
       where: { id: testId },
       include: {
-        questions: {
-          include: {
-            options: {
-              select: {
-                id: true,
-                text: true,
-                order: true,
-              },
-            },
-          },
-          orderBy: {
-            order: 'asc',
-          },
-        },
         topic: {
           include: {
             course: {
@@ -206,6 +192,17 @@ export async function GET(request: Request) {
                   where: {
                     studentId: session.user.id,
                     status: 'ACTIVE',
+                  },
+                },
+              },
+            },
+            questions: {
+              include: {
+                options: {
+                  select: {
+                    id: true,
+                    text: true,
+                    order: true,
                   },
                 },
               },
@@ -261,11 +258,10 @@ export async function GET(request: Request) {
       description: test.description,
       duration: test.duration,
       totalPoints: test.totalPoints,
-      questions: test.questions.map(q => ({
+      questions: test.topic.questions.map(q => ({
         id: q.id,
         text: q.text,
         type: q.type,
-        order: q.order,
         options: q.options,
       })),
     };

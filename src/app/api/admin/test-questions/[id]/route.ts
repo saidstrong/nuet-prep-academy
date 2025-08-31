@@ -32,7 +32,8 @@ export async function GET(
               }
             }
           }
-        }
+        },
+        options: true
       }
     });
 
@@ -54,7 +55,7 @@ export async function GET(
       courseId: question.topic.course.id,
       courseTitle: question.topic.course.title,
       points: question.points,
-      options: question.options,
+      options: question.options.map(opt => opt.text),
       correctAnswer: question.correctAnswer,
       explanation: question.explanation,
       createdAt: question.createdAt.toISOString(),
@@ -155,10 +156,17 @@ export async function PUT(
         difficulty,
         topicId,
         points,
-        options: type === 'MULTIPLE_CHOICE' ? options : undefined,
         correctAnswer: type === 'MULTIPLE_CHOICE' || type === 'TRUE_FALSE' ? correctAnswer : undefined,
         explanation,
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        options: type === 'MULTIPLE_CHOICE' ? {
+          deleteMany: {},
+          create: options.map((option: string, index: number) => ({
+            text: option,
+            isCorrect: option === correctAnswer,
+            order: index
+          }))
+        } : undefined
       },
       include: {
         topic: {
@@ -170,7 +178,8 @@ export async function PUT(
               }
             }
           }
-        }
+        },
+        options: true
       }
     });
 
@@ -185,7 +194,7 @@ export async function PUT(
       courseId: updatedQuestion.topic.course.id,
       courseTitle: updatedQuestion.topic.course.title,
       points: updatedQuestion.points,
-      options: updatedQuestion.options,
+      options: updatedQuestion.options.map(opt => opt.text),
       correctAnswer: updatedQuestion.correctAnswer,
       explanation: updatedQuestion.explanation,
       createdAt: updatedQuestion.createdAt.toISOString(),

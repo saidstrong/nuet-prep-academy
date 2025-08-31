@@ -156,6 +156,7 @@ model Topic {
   
   materials Material[]
   tests     Test[]
+  questions Question[]
 
   @@map("topics")
 }
@@ -192,7 +193,6 @@ model Test {
   topicId String
   topic   Topic  @relation(fields: [topicId], references: [id])
   
-  questions   Question[]
   submissions TestSubmission[]
 
   @@map("tests")
@@ -202,13 +202,16 @@ model Question {
   id          String   @id @default(cuid())
   text        String
   type        String   @default("MULTIPLE_CHOICE")
-  order       Int
+  difficulty  String   @default("MEDIUM")
+  points      Int      @default(1)
+  correctAnswer String?
+  explanation String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
-  testId String
-  test   Test    @relation(fields: [testId], references: [id])
+  topicId String
+  topic   Topic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
   
   options QuestionOption[]
 
@@ -225,7 +228,7 @@ model QuestionOption {
 
   // Relations
   questionId String
-  question   Question @relation(fields: [questionId], references: [id])
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@map("question_options")
 }
