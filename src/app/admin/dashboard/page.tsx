@@ -231,6 +231,16 @@ export default function AdminDashboard() {
               >
                 Students
               </button>
+              <button
+                onClick={() => setActiveTab('test-questions')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'test-questions'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Test Questions
+              </button>
             </nav>
           </div>
 
@@ -449,6 +459,58 @@ export default function AdminDashboard() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              </div>
+            )}
+
+            {/* Test Questions Tab */}
+            {activeTab === 'test-questions' && (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-medium text-gray-900">Test Question Management</h3>
+                  <div className="flex space-x-3">
+                    <button 
+                      onClick={() => router.push('/admin/test-questions')}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Manage Questions
+                    </button>
+                    <button 
+                      onClick={() => router.push('/admin/test-questions')}
+                      className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                    >
+                      + Create Question
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <h4 className="text-lg font-medium text-blue-900">Test Question Bank</h4>
+                  </div>
+                  <p className="text-blue-700 mb-4">
+                    Create and manage test questions for all courses. Build comprehensive question banks with multiple choice, 
+                    true/false, short answer, and essay questions.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-white p-4 rounded-lg border border-blue-200">
+                      <h5 className="font-medium text-blue-900 mb-2">Question Types</h5>
+                      <p className="text-sm text-blue-700">Multiple choice, true/false, short answer, and essay questions</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg border border-blue-200">
+                      <h5 className="font-medium text-blue-900 mb-2">Difficulty Levels</h5>
+                      <p className="text-sm text-blue-700">Easy, medium, and hard questions with point values</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg border border-blue-200">
+                      <h5 className="font-medium text-blue-900 mb-2">Topic Organization</h5>
+                      <p className="text-sm text-blue-700">Organize questions by course topics for easy management</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
