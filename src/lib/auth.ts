@@ -16,6 +16,8 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
+          console.log("🔍 NextAuth authorize called for:", credentials.email);
+          
           // Lazy import to prevent build-time issues
           const { prisma } = await import("@/lib/prisma");
           
@@ -25,14 +27,22 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!user) {
+            console.log("❌ User not found for:", credentials.email);
             return null;
           }
+          
+          console.log("✅ User found:", { id: user.id, name: user.name, role: user.role });
 
+          // Lazy import bcrypt to prevent build-time issues
+          const bcrypt = await import("bcryptjs");
           const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
 
           if (!isPasswordValid) {
+            console.log("❌ Password validation failed for:", credentials.email);
             return null;
           }
+          
+          console.log("✅ Password validation successful for:", credentials.email);
 
           return {
             id: user.id,
