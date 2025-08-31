@@ -459,12 +459,18 @@ export default function StudentDashboard() {
                               {new Date(test.submittedAt).toLocaleDateString()}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                              <button
-                                onClick={() => router.push(`/tests/${test.id}/results`)}
-                                className="text-blue-600 hover:text-blue-900"
-                              >
-                                View Results
-                              </button>
+                                                      <button
+                          onClick={() => router.push(`/tests/${test.id}/results`)}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          View Results
+                        </button>
+                        <button
+                          onClick={() => router.push(`/tests/take/${test.id}`)}
+                          className="text-green-600 hover:text-green-900 ml-3"
+                        >
+                          Retake Test
+                        </button>
                             </td>
                           </tr>
                         ))}
