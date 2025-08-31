@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
-import { Menu, X, MessageCircle, BookOpen, Users, Settings, LogOut } from 'lucide-react';
+import { Menu, X, MessageCircle, BookOpen, Users, Settings, LogOut, BarChart3 } from 'lucide-react';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -57,6 +57,12 @@ export default function Header() {
                   <Link href="/tutor/dashboard" className="text-slate-700 hover:text-primary transition-colors flex items-center space-x-1">
                     <BookOpen className="w-4 h-4" />
                     <span>Tutor Dashboard</span>
+                  </Link>
+                )}
+                {session.user.role === 'STUDENT' && (
+                  <Link href="/student/dashboard" className="text-slate-700 hover:text-primary transition-colors flex items-center space-x-1">
+                    <BarChart3 className="w-4 h-4" />
+                    <span>Student Dashboard</span>
                   </Link>
                 )}
               </>
