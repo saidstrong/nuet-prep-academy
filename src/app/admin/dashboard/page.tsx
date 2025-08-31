@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import CourseCreationModal from '@/components/CourseCreationModal';
+import TutorCreationModal from '@/components/TutorCreationModal';
 
 interface Course {
   id: string;
@@ -49,6 +50,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
+  const [isTutorModalOpen, setIsTutorModalOpen] = useState(false);
 
   // Check if user is admin
   useEffect(() => {
@@ -250,12 +252,12 @@ export default function AdminDashboard() {
                     >
                       Create New Course
                     </button>
-                    <button
-                      onClick={() => setActiveTab('tutors')}
-                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-                    >
-                      Manage Tutors
-                    </button>
+                                            <button 
+                          onClick={() => router.push('/admin/tutors')}
+                          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          Manage Tutors
+                        </button>
                     <button
                       onClick={() => setActiveTab('students')}
                       className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
@@ -343,7 +345,10 @@ export default function AdminDashboard() {
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-medium text-gray-900">Tutor Management</h3>
-                  <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                  <button 
+                    onClick={() => setIsTutorModalOpen(true)}
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                  >
                     + Add Tutor
                   </button>
                 </div>
@@ -445,6 +450,13 @@ export default function AdminDashboard() {
         isOpen={isCourseModalOpen}
         onClose={() => setIsCourseModalOpen(false)}
         onCourseCreated={fetchDashboardData}
+      />
+
+      {/* Tutor Creation Modal */}
+      <TutorCreationModal
+        isOpen={isTutorModalOpen}
+        onClose={() => setIsTutorModalOpen(false)}
+        onTutorCreated={fetchDashboardData}
       />
     </div>
   );
