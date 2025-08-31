@@ -1,0 +1,5 @@
+[33mfa74734[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Fix table name mapping in Prisma schema
+[33m1f587d9[m Add @supabase/supabase-js dependency
+[33m0427608[m Trigger deployment with updated Supabase config
+[33m3a95fd4[m Fix TypeScript errors and complete build
+[33mbc7bef5[m Add: Signup functionality test endpoint
