@@ -15,29 +15,29 @@ export async function GET() {
     const userCount = await prisma.user.count();
     console.log(`📊 Total users in database: ${userCount}`);
     
-    // Check for the owner account specifically
-    const owner = await prisma.user.findUnique({
-      where: { email: 'owner@nuetprep.academy' }
+    // Check for the admin account specifically
+    const admin = await prisma.user.findUnique({
+      where: { email: 'admin@nuetprep.academy' }
     });
     
-    if (owner) {
-      console.log('✅ Owner account found');
+    if (admin) {
+      console.log('✅ Admin account found');
       return NextResponse.json({
         success: true,
         message: 'Database connection successful',
         userCount,
-        ownerFound: true,
-        ownerId: owner.id,
-        ownerName: owner.name,
-        ownerRole: owner.role
+        adminFound: true,
+        adminId: admin.id,
+        adminName: admin.name,
+        adminRole: admin.role
       });
     } else {
-      console.log('❌ Owner account NOT found');
+      console.log('❌ Admin account NOT found');
       return NextResponse.json({
         success: true,
-        message: 'Database connected but owner account not found',
+        message: 'Database connected but admin account not found',
         userCount,
-        ownerFound: false
+        adminFound: false
       });
     }
     

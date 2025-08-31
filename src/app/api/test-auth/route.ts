@@ -10,36 +10,36 @@ export async function GET() {
     
     console.log('🔍 Testing authentication process...');
     
-    // Get the owner account
-    const owner = await prisma.user.findUnique({
-      where: { email: 'owner@nuetprep.academy' }
+    // Get the admin account
+    const admin = await prisma.user.findUnique({
+      where: { email: 'admin@nuetprep.academy' }
     });
     
-    if (!owner) {
+    if (!admin) {
       return NextResponse.json({
         success: false,
-        message: 'Owner account not found'
+        message: 'Admin account not found'
       });
     }
     
     // Test password verification
     const bcrypt = await import('bcryptjs');
-    const testPassword = 'owner123';
-    const isPasswordValid = await bcrypt.compare(testPassword, owner.password);
+    const testPassword = 'admin123';
+    const isPasswordValid = await bcrypt.compare(testPassword, admin.password);
     
     // Test with different password variations
-    const testPassword2 = 'Saltanat_1980';
-    const isPassword2Valid = await bcrypt.compare(testPassword2, owner.password);
+    const testPassword2 = 'owner123';
+    const isPassword2Valid = await bcrypt.compare(testPassword2, admin.password);
     
     return NextResponse.json({
       success: true,
       message: 'Authentication test results',
-      ownerId: owner.id,
-      ownerName: owner.name,
-      ownerRole: owner.role,
+      adminId: admin.id,
+      adminName: admin.name,
+      adminRole: admin.role,
       passwordTests: {
-        'owner123': isPasswordValid,
-        'Saltanat_1980': isPassword2Valid
+        'admin123': isPasswordValid,
+        'owner123': isPassword2Valid
       },
       note: 'Check which password matches the hash in the database'
     });
