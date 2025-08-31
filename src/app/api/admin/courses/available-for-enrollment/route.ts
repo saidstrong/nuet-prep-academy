@@ -25,8 +25,7 @@ export async function GET() {
       include: {
         enrollments: {
           where: {
-            status: 'ACTIVE',
-            tutorId: { not: null }
+            status: 'ACTIVE'
           },
           select: {
             tutorId: true,
@@ -41,16 +40,16 @@ export async function GET() {
 
     // Transform the data to include available tutors with capacity
     const transformedCourses = courses.map(course => {
-      // Group enrollments by tutor to get tutor capacity
-      const tutorEnrollments = course.enrollments.reduce((acc, enrollment) => {
-        if (enrollment.tutorId) {
+      // Filter enrollments that have tutors and group by tutor
+      const tutorEnrollments = course.enrollments
+        .filter(enrollment => enrollment.tutorId && enrollment.tutorId.trim() !== '')
+        .reduce((acc, enrollment) => {
           if (!acc[enrollment.tutorId]) {
             acc[enrollment.tutorId] = [];
           }
           acc[enrollment.tutorId].push(enrollment);
-        }
-        return acc;
-      }, {} as Record<string, any[]>);
+          return acc;
+        }, {} as Record<string, any[]>);
 
       // Get unique tutor IDs
       const tutorIds = Object.keys(tutorEnrollments);
