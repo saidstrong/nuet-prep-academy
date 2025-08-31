@@ -7,6 +7,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import CourseCreationModal from '@/components/CourseCreationModal';
 import TutorCreationModal from '@/components/TutorCreationModal';
+import StudentCreationModal from '@/components/StudentCreationModal';
 
 interface Course {
   id: string;
@@ -51,6 +52,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
   const [isTutorModalOpen, setIsTutorModalOpen] = useState(false);
+  const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
 
   // Check if user is admin
   useEffect(() => {
@@ -259,7 +261,7 @@ export default function AdminDashboard() {
                           Manage Tutors
                         </button>
                     <button
-                      onClick={() => setActiveTab('students')}
+                      onClick={() => setIsStudentModalOpen(true)}
                       className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
                     >
                       Add Students
@@ -394,12 +396,23 @@ export default function AdminDashboard() {
             {/* Students Tab */}
             {activeTab === 'students' && (
               <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-medium text-gray-900">Student Management</h3>
-                  <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
-                    + Add Student
-                  </button>
-                </div>
+                                 <div className="flex justify-between items-center">
+                   <h3 className="text-lg font-medium text-gray-900">Student Management</h3>
+                   <div className="flex space-x-3">
+                     <button 
+                       onClick={() => router.push('/admin/students')}
+                       className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                     >
+                       Manage Students
+                     </button>
+                     <button 
+                       onClick={() => setIsStudentModalOpen(true)}
+                       className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                     >
+                       + Add Student
+                     </button>
+                   </div>
+                 </div>
                 
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
@@ -457,6 +470,13 @@ export default function AdminDashboard() {
         isOpen={isTutorModalOpen}
         onClose={() => setIsTutorModalOpen(false)}
         onTutorCreated={fetchDashboardData}
+      />
+
+      {/* Student Creation Modal */}
+      <StudentCreationModal
+        isOpen={isStudentModalOpen}
+        onClose={() => setIsStudentModalOpen(false)}
+        onStudentCreated={fetchDashboardData}
       />
     </div>
   );

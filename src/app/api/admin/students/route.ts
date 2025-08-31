@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import bcrypt from 'bcryptjs';
 
 export async function GET() {
   try {
@@ -27,21 +28,20 @@ export async function GET() {
           where: {
             status: 'ACTIVE'
           },
-          include: {
-            course: {
-              select: {
-                id: true,
-                title: true,
-                price: true
-              }
-            },
-            tutor: {
-              select: {
-                id: true,
-                name: true,
-                email: true
-              }
-            }
+          select: {
+            id: true,
+            courseId: true,
+            tutorId: true,
+            enrolledAt: true,
+            paymentStatus: true
+          }
+        },
+        profile: {
+          select: {
+            phone: true,
+            whatsapp: true,
+            education: true,
+            goals: true
           }
         }
       },
@@ -50,35 +50,19 @@ export async function GET() {
       }
     });
 
-    // Transform the data for the dashboard
+    // Transform the data to include course and tutor information
     const transformedStudents = students.map(student => {
-      // Get unique enrolled courses
-      const enrolledCourses = [...new Set(student.studentEnrollments.map(enrollment => enrollment.course.id))];
-      
-      // Count total enrollments
+      const enrolledCourses = student.studentEnrollments.map(enrollment => enrollment.courseId);
       const totalEnrollments = student.studentEnrollments.length;
       
-      // Get course details
-      const courseDetails = student.studentEnrollments.map(enrollment => ({
-        courseId: enrollment.course.id,
-        courseTitle: enrollment.course.title,
-        coursePrice: enrollment.course.price,
-        tutorId: enrollment.tutor.id,
-        tutorName: enrollment.tutor.name,
-        tutorEmail: enrollment.tutor.email,
-        enrollmentDate: enrollment.enrolledAt
-      }));
-
       return {
         id: student.id,
         name: student.name,
         email: student.email,
         role: student.role,
-        enrolledCourses: enrolledCourses,
+        enrolledCourses,
         totalEnrollments,
-        courseDetails,
-        createdAt: student.createdAt,
-        updatedAt: student.updatedAt
+        profile: student.profile
       };
     });
 
@@ -89,7 +73,7 @@ export async function GET() {
     });
 
   } catch (error) {
-    console.error('Error fetching admin students:', error);
+    console.error('Error fetching students:', error);
     return NextResponse.json(
       { 
         error: 'Failed to fetch students',
@@ -102,74 +86,87 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    // Check if user is authenticated and is admin
     const session = await getServerSession(authOptions);
     
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized - Admin access required' },
+        { status: 401 }
+      );
     }
 
     const body = await request.json();
-    const { name, email, password, bio, phone, whatsapp, experience } = body;
+    const { name, email, password, phone, whatsapp, education, goals } = body;
 
+    // Validate required fields
     if (!name || !email || !password) {
-      return NextResponse.json({
-        success: false,
-        message: 'Missing required fields',
-      }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Missing required fields: name, email, password' },
+        { status: 400 }
+      );
     }
 
+    // Lazy import to prevent build-time issues
     const { prisma } = await import('@/lib/prisma');
-
-    // Check if user already exists
+    
+    // Check if email already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { email }
     });
 
     if (existingUser) {
-      return NextResponse.json({
-        success: false,
-        message: 'User with this email already exists',
-      }, { status: 400 });
+      return NextResponse.json(
+        { error: 'User with this email already exists' },
+        { status: 400 }
+      );
     }
 
-    // Hash password
-    const bcrypt = await import('bcryptjs');
+    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 12);
 
+    // Create the student user
     const student = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
-        role: 'STUDENT',
-        profile: {
-          create: {
-            bio: bio || '',
-            phone: phone || '',
-            whatsapp: whatsapp || '',
-            experience: experience || '',
-          },
-        },
-      },
-      include: {
-        profile: true,
-      },
+        role: 'STUDENT'
+      }
     });
 
-    // Remove password from response
-    const { password: _, ...studentWithoutPassword } = student;
+    // Create profile if additional information is provided
+    if (phone || whatsapp || education || goals) {
+      await prisma.profile.create({
+        data: {
+          userId: student.id,
+          phone: phone || null,
+          whatsapp: whatsapp || null,
+          education: education || null,
+          goals: goals || null
+        }
+      });
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Student created successfully',
-      student: studentWithoutPassword,
-    }, { status: 201 });
+      student: {
+        id: student.id,
+        name: student.name,
+        email: student.email,
+        role: student.role
+      },
+      message: 'Student created successfully'
+    });
 
   } catch (error) {
     console.error('Error creating student:', error);
-    return NextResponse.json({
-      success: false,
-      message: 'An error occurred while creating the student',
-    }, { status: 500 });
+    return NextResponse.json(
+      { 
+        error: 'Failed to create student',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
   }
 }
