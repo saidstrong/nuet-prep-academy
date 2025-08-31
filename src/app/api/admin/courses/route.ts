@@ -30,17 +30,17 @@ export async function GET() {
         topics: {
           select: {
             id: true,
-            title: true
-          }
-        },
-        materials: {
-          select: {
-            id: true
-          }
-        },
-        tests: {
-          select: {
-            id: true
+            title: true,
+            materials: {
+              select: {
+                id: true
+              }
+            },
+            tests: {
+              select: {
+                id: true
+              }
+            }
           }
         },
         enrollments: {
@@ -80,8 +80,8 @@ export async function GET() {
         enrolledStudents,
         tutors,
         topics: course.topics.length,
-        materials: course.materials.length,
-        tests: course.tests.length,
+        materials: course.topics.reduce((total, topic) => total + topic.materials.length, 0),
+        tests: course.topics.reduce((total, topic) => total + topic.tests.length, 0),
         createdAt: course.createdAt,
         updatedAt: course.updatedAt
       };
