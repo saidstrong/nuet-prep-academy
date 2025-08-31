@@ -11,10 +11,10 @@ async function main() {
 
   // Create admin user
   const adminUser = await prisma.user.upsert({
-    where: { email: 'admin@nuetprepacademy.com' },
+    where: { email: 'admin@nuetprep.academy' },
     update: {},
     create: {
-      email: 'admin@nuetprepacademy.com',
+              email: 'admin@nuetprep.academy',
       name: 'Said Amanzhol',
       password: hashedPassword,
       role: 'ADMIN',
@@ -115,7 +115,7 @@ async function main() {
 
   console.log('🎉 Database seeding completed successfully!');
   console.log('👤 Admin account created:');
-  console.log(`   Email: admin@nuetprepacademy.com`);
+  console.log(`   Email: admin@nuetprep.academy`);
   console.log(`   Password: admin123`);
   console.log(`   Role: ${adminUser.role}`);
 }
