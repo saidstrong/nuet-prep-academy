@@ -21,6 +21,10 @@ export const authOptions: NextAuthOptions = {
           // Lazy import to prevent build-time issues
           const { prisma } = await import("@/lib/prisma");
           
+          // Test database connection first
+          await prisma.$connect();
+          console.log("✅ Database connected successfully in NextAuth");
+          
           const user = await prisma.user.findUnique({
             where: { email: credentials.email },
             include: { profile: true }
@@ -51,8 +55,21 @@ export const authOptions: NextAuthOptions = {
             role: user.role,
           };
         } catch (error) {
-          console.error("Auth error:", error);
+          console.error("❌ NextAuth error:", error);
+          console.error("❌ Error details:", {
+            name: error instanceof Error ? error.name : 'Unknown',
+            message: error instanceof Error ? error.message : 'Unknown',
+            stack: error instanceof Error ? error.stack : 'Unknown'
+          });
           return null;
+        } finally {
+          try {
+            const { prisma } = await import("@/lib/prisma");
+            await prisma.$disconnect();
+            console.log("✅ Database disconnected in NextAuth");
+          } catch (e) {
+            console.log("⚠️ Error disconnecting database:", e);
+          }
         }
       }
     })
