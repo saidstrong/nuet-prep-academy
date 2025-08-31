@@ -31,8 +31,8 @@ interface Student {
   profile?: {
     phone?: string;
     whatsapp?: string;
-    education?: string;
-    goals?: string;
+    bio?: string;
+    experience?: string;
   };
 }
 
@@ -342,17 +342,17 @@ export default function StudentManagementPage() {
                 </div>
               </div>
 
-              {selectedStudent.profile?.education && (
+              {selectedStudent.profile?.bio && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Education Level</label>
-                  <p className="text-sm text-gray-900">{selectedStudent.profile.education}</p>
+                  <label className="block text-sm font-medium text-gray-700">Bio</label>
+                  <p className="text-sm text-gray-900">{selectedStudent.profile.bio}</p>
                 </div>
               )}
 
-              {selectedStudent.profile?.goals && (
+              {selectedStudent.profile?.experience && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Learning Goals</label>
-                  <p className="text-sm text-gray-900">{selectedStudent.profile.goals}</p>
+                  <label className="block text-sm font-medium text-gray-700">Experience</label>
+                  <p className="text-sm text-gray-900">{selectedStudent.profile.experience}</p>
                 </div>
               )}
 

@@ -40,8 +40,8 @@ export async function GET() {
           select: {
             phone: true,
             whatsapp: true,
-            education: true,
-            goals: true
+            bio: true,
+            experience: true
           }
         }
       },
@@ -97,7 +97,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, email, password, phone, whatsapp, education, goals } = body;
+    const { name, email, password, phone, whatsapp, bio, experience } = body;
 
     // Validate required fields
     if (!name || !email || !password) {
@@ -136,14 +136,14 @@ export async function POST(request: Request) {
     });
 
     // Create profile if additional information is provided
-    if (phone || whatsapp || education || goals) {
+    if (phone || whatsapp || bio || experience) {
       await prisma.profile.create({
         data: {
           userId: student.id,
           phone: phone || null,
           whatsapp: whatsapp || null,
-          education: education || null,
-          goals: goals || null
+          bio: bio || null,
+          experience: experience || null
         }
       });
     }

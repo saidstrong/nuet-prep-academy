@@ -15,8 +15,8 @@ interface StudentFormData {
   confirmPassword: string;
   phone: string;
   whatsapp: string;
-  education: string;
-  goals: string;
+  bio: string;
+  experience: string;
 }
 
 export default function StudentCreationModal({ isOpen, onClose, onStudentCreated }: StudentCreationModalProps) {
@@ -27,8 +27,8 @@ export default function StudentCreationModal({ isOpen, onClose, onStudentCreated
     confirmPassword: '',
     phone: '',
     whatsapp: '',
-    education: '',
-    goals: ''
+    bio: '',
+    experience: ''
   });
   
   const [loading, setLoading] = useState(false);
@@ -78,8 +78,8 @@ export default function StudentCreationModal({ isOpen, onClose, onStudentCreated
           password: formData.password,
           phone: formData.phone,
           whatsapp: formData.whatsapp,
-          education: formData.education,
-          goals: formData.goals
+          bio: formData.bio,
+          experience: formData.experience
         }),
       });
 
@@ -96,8 +96,8 @@ export default function StudentCreationModal({ isOpen, onClose, onStudentCreated
         confirmPassword: '',
         phone: '',
         whatsapp: '',
-        education: '',
-        goals: ''
+        bio: '',
+        experience: ''
       });
       
       onStudentCreated();
@@ -263,38 +263,38 @@ export default function StudentCreationModal({ isOpen, onClose, onStudentCreated
             </div>
           </div>
 
-          {/* Education */}
+          {/* Bio */}
           <div>
-            <label htmlFor="education" className="block text-sm font-medium text-gray-700 mb-2">
-              Current Education Level
+            <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-2">
+              Bio
             </label>
             <div className="relative">
               <GraduationCap className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
               <textarea
-                id="education"
-                name="education"
-                value={formData.education}
+                id="bio"
+                name="bio"
+                value={formData.bio}
                 onChange={handleInputChange}
                 rows={3}
                 className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Describe current education level, school, grade, etc."
+                placeholder="Tell us about yourself, background, interests, etc."
               />
             </div>
           </div>
 
-          {/* Goals */}
+          {/* Experience */}
           <div>
-            <label htmlFor="goals" className="block text-sm font-medium text-gray-700 mb-2">
-              Learning Goals
+            <label htmlFor="experience" className="block text-sm font-medium text-gray-700 mb-2">
+              Experience
             </label>
             <textarea
-              id="goals"
-              name="goals"
-              value={formData.goals}
+              id="experience"
+              name="experience"
+              value={formData.experience}
               onChange={handleInputChange}
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="What does the student want to achieve? Target scores, subjects, etc."
+              placeholder="Previous education, achievements, or relevant experience"
             />
           </div>
 
