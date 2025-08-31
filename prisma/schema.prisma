@@ -156,6 +156,8 @@ model Topic {
   
   materials Material[]
   tests     Test[]
+
+  @@map("topics")
 }
 
 model Material {
@@ -172,6 +174,8 @@ model Material {
   // Relations
   topicId String
   topic   Topic  @relation(fields: [topicId], references: [id])
+
+  @@map("materials")
 }
 
 model Test {
@@ -190,6 +194,8 @@ model Test {
   
   questions   Question[]
   submissions TestSubmission[]
+
+  @@map("tests")
 }
 
 model Question {
@@ -205,6 +211,8 @@ model Question {
   test   Test    @relation(fields: [testId], references: [id])
   
   options QuestionOption[]
+
+  @@map("questions")
 }
 
 model QuestionOption {
@@ -218,6 +226,8 @@ model QuestionOption {
   // Relations
   questionId String
   question   Question @relation(fields: [questionId], references: [id])
+
+  @@map("question_options")
 }
 
 model CourseEnrollment {
@@ -259,6 +269,8 @@ model Payment {
   
   courseId String
   course   Course @relation(fields: [courseId], references: [id])
+
+  @@map("payments")
 }
 
 model Chat {
@@ -274,6 +286,8 @@ model Chat {
   
   participants ChatParticipant[]
   messages     Message[]
+
+  @@map("chats")
 }
 
 model ChatParticipant {
@@ -287,6 +301,8 @@ model ChatParticipant {
   
   userId String
   user   User   @relation(fields: [userId], references: [id])
+
+  @@map("chat_participants")
 }
 
 model Message {
@@ -302,6 +318,8 @@ model Message {
   
   senderId String
   sender   User   @relation(fields: [senderId], references: [id])
+
+  @@map("messages")
 }
 
 model TestSubmission {
@@ -321,4 +339,6 @@ model TestSubmission {
   
   studentId String
   student   User   @relation(fields: [studentId], references: [id])
+
+  @@map("test_submissions")
 }
