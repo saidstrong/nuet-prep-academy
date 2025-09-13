@@ -8,5 +8,8 @@
   },
   "keywords": ["static", "website", "nuet"],
   "author": "NUET Prep Academy",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.0"
+  }
 }
