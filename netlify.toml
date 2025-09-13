@@ -1,11 +1,6 @@
 [build]
-  command = "cd static-site && npm install && npm run build"
+  command = "echo 'Static site ready'"
   publish = "static-site"
-
-[build.environment]
-  NEXTAUTH_URL = "https://prep-academy.netlify.app"
-  NEXTAUTH_SECRET = "nuet-prep-academy-secret-key-2024"
-  NODE_VERSION = "18"
 
 [[redirects]]
   from = "/*"
