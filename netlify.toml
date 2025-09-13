@@ -2,6 +2,10 @@
   command = "echo 'Static site ready'"
   publish = "static-site"
 
+# Disable Next.js plugin
+[build.processing]
+  skip_processing = true
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
