@@ -1,24 +1,10 @@
 [build]
-  command = "chmod +x build-static.sh && ./build-static.sh"
+  command = "echo 'Static site ready'"
   publish = "public"
 
 [build.environment]
   NEXTAUTH_URL = "https://prep-academy.netlify.app"
   NEXTAUTH_SECRET = "nuet-prep-academy-secret-key-2024"
-
-[build.processing]
-  skip_processing = false
-
-[build.processing.css]
-  bundle = false
-  minify = false
-
-[build.processing.js]
-  bundle = false
-  minify = false
-
-[build.processing.html]
-  pretty_urls = true
 
 [[redirects]]
   from = "/*"
