@@ -81,3 +81,6 @@ fs.writeFileSync(serverPackagePath, JSON.stringify({
 
 console.log('Static site ready for deployment');
 console.log('Complete Next.js plugin compatibility structure created');
+
+// Exit successfully
+process.exit(0);
