@@ -1,0 +1,12 @@
+{
+  "name": "nuet-prep-academy-static",
+  "version": "1.0.0",
+  "description": "NUET Prep Academy - Static Website",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'Static site ready'"
+  },
+  "keywords": ["nuet", "preparation", "education"],
+  "author": "NUET Prep Academy",
+  "license": "MIT"
+}
