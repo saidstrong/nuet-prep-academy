@@ -6,8 +6,7 @@
   "scripts": {
     "build": "echo 'Static site ready'"
   },
-  "keywords": ["nuet", "preparation", "education", "static"],
+  "keywords": ["static", "website", "nuet"],
   "author": "NUET Prep Academy",
-  "license": "MIT",
-  "type": "module"
+  "license": "MIT"
 }

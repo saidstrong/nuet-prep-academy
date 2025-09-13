@@ -1,6 +1,6 @@
 [build]
-  command = "echo 'Static site ready'"
-  publish = "public"
+  command = "cd static-site && npm run build"
+  publish = "static-site"
 
 [build.environment]
   NEXTAUTH_URL = "https://prep-academy.netlify.app"

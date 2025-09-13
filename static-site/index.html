@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NUET Prep Academy - Prepare. Practice. Succeed at NUET.</title>
+    <meta name="description" content="Comprehensive preparation for Nazarbayev University Entrance Test. Focused curriculum, real practice, and supportive guidance.">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .btn-primary {
+            @apply bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200;
+        }
+        .btn-secondary {
+            @apply bg-white hover:bg-gray-50 text-primary-600 font-semibold py-3 px-6 rounded-lg border-2 border-primary-600 transition-all duration-200;
+        }
+        .container-section {
+            @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-hover {
+            @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="container-section">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-lg">N</span>
+                    </div>
+                    <span class="text-xl font-bold text-gray-900">NUET PREP ACADEMY</span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#home" class="text-gray-700 hover:text-primary-600 font-medium">Home</a>
+                    <a href="#courses" class="text-gray-700 hover:text-primary-600 font-medium">Courses</a>
+                    <a href="#about" class="text-gray-700 hover:text-primary-600 font-medium">About Us</a>
+                    <a href="#contact" class="text-gray-700 hover:text-primary-600 font-medium">Contact</a>
+                </div>
+                <div class="flex space-x-4">
+                    <button class="text-gray-700 hover:text-primary-600 font-medium">Sign In</button>
+                    <button class="btn-primary">Sign Up</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="gradient-bg text-white py-20">
+        <div class="container-section">
+            <div class="grid md:grid-cols-2 gap-10 items-center">
+                <div>
+                    <h1 class="text-4xl md:text-6xl font-bold mb-6">
+                        Prepare. Practice. Succeed at NUET.
+                    </h1>
+                    <p class="text-xl mb-8 text-gray-100">
+                        Comprehensive preparation for Nazarbayev University Entrance Test. Focused curriculum, real practice, and supportive guidance.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button onclick="openEnrollModal()" class="btn-primary flex items-center justify-center">
+                            <span>Enroll Now</span>
+                        </button>
+                        <a href="#courses" class="btn-secondary flex items-center justify-center">
+                            <span>View Courses</span>
+                        </a>
+                    </div>
+                </div>
+                <div class="relative">
+                    <img src="/hero-image.jpg" alt="NUET Preparation" class="rounded-lg shadow-2xl w-full">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-20 bg-white">
+        <div class="container-section">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Why Choose NUET Prep Academy?</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    We provide everything you need to succeed in the NUET exam with our comprehensive approach and expert guidance.
+                </p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="text-center card-hover p-6 rounded-lg border border-gray-200">
+                    <div class="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="text-2xl">📚</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Tailored NUET Preparation</h3>
+                    <p class="text-gray-600">Curriculum aligned to NUET in Math, CT, and English.</p>
+                </div>
+                <div class="text-center card-hover p-6 rounded-lg border border-gray-200">
+                    <div class="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="text-2xl">🌙</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Evening Flexible Classes</h3>
+                    <p class="text-gray-600">Schedules that work for school students.</p>
+                </div>
+                <div class="text-center card-hover p-6 rounded-lg border border-gray-200">
+                    <div class="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="text-2xl">👨‍🏫</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Experienced Tutor (Founder-led)</h3>
+                    <p class="text-gray-600">Daily guidance and feedback from the founder.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="py-20 bg-gray-50">
+        <div class="container-section">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">What parents and students say</h2>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow-lg card-hover">
+                    <p class="text-gray-600 mb-4">"Clear explanations and a structured plan — exactly what we needed to start NUET prep with confidence."</p>
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center mr-3">
+                            <span class="text-primary-600 font-semibold">P</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold">Parent from Astana</p>
+                            <p class="text-sm text-gray-500">Prospective Parent</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-lg card-hover">
+                    <p class="text-gray-600 mb-4">"Weekly practice tests and solution walkthroughs make it much easier to track progress."</p>
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center mr-3">
+                            <span class="text-primary-600 font-semibold">Y</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold">Yerkezhan</p>
+                            <p class="text-sm text-gray-500">Prospective Student</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-lg card-hover">
+                    <p class="text-gray-600 mb-4">"I like the evening schedule and the focus on problem‑solving strategies."</p>
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center mr-3">
+                            <span class="text-primary-600 font-semibold">A</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold">Adil</p>
+                            <p class="text-sm text-gray-500">Prospective Student</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="container-section">
+            <div class="grid md:grid-cols-3 gap-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+                            <span class="text-white font-bold text-lg">N</span>
+                        </div>
+                        <span class="text-xl font-bold">NUET Prep Academy</span>
+                    </div>
+                    <p class="text-gray-300 mb-4">
+                        Comprehensive preparation for the Nazarbayev University Entrance Test. Evening classes, focused practice, and founder-led instruction.
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Contact</h3>
+                    <p class="text-gray-300 mb-2">Astana, Kabanbay Batyr ave 53, Nazarbayev University</p>
+                    <p class="text-gray-300 mb-2">Email: amanzhol.said08@gmail.com</p>
+                    <div class="flex space-x-4 mt-4">
+                        <a href="https://wa.me/77075214911" class="text-green-400 hover:text-green-300">WhatsApp</a>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#home" class="text-gray-300 hover:text-white">Home</a></li>
+                        <li><a href="#courses" class="text-gray-300 hover:text-white">Courses</a></li>
+                        <li><a href="#about" class="text-gray-300 hover:text-white">About Us</a></li>
+                        <li><a href="#contact" class="text-gray-300 hover:text-white">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2025 NUET Prep Academy. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Enrollment Modal -->
+    <div id="enrollModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 class="text-xl font-bold text-slate-900 mb-4">Choose Enrollment Method</h3>
+            <p class="text-slate-600 mb-6">
+                Select your preferred way to get in touch with us for enrollment:
+            </p>
+            <div class="space-y-3">
+                <button onclick="enrollWhatsApp()" class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2">
+                    <span>📱 WhatsApp</span>
+                </button>
+                <button onclick="enrollTelegram()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2">
+                    <span>💬 Telegram</span>
+                </button>
+            </div>
+            <button onclick="closeEnrollModal()" class="w-full mt-4 text-slate-500 hover:text-slate-700 font-medium py-2">
+                Cancel
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function openEnrollModal() {
+            document.getElementById('enrollModal').classList.remove('hidden');
+        }
+
+        function closeEnrollModal() {
+            document.getElementById('enrollModal').classList.add('hidden');
+        }
+
+        function enrollWhatsApp() {
+            const message = encodeURIComponent("Hello! I'm interested in NUET preparation courses. Could you please provide more information?");
+            window.open(`https://wa.me/77075214911?text=${message}`, '_blank');
+            closeEnrollModal();
+        }
+
+        function enrollTelegram() {
+            window.open('https://t.me/sherlockzini', '_blank');
+            closeEnrollModal();
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('enrollModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEnrollModal();
+            }
+        });
+    </script>
+</body>
+</html>
