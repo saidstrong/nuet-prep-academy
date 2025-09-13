@@ -115,8 +115,56 @@ module.exports = {
 };
 `);
 
+// Create standalone directory structure (required by Next.js plugin)
+const standaloneDir = path.join(nextDir, 'standalone');
+const standaloneServerDir = path.join(standaloneDir, 'server');
+const standaloneStaticDir = path.join(standaloneDir, 'static');
+
+[standaloneDir, standaloneServerDir, standaloneStaticDir].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
+
+// Copy index.html to standalone directory
+fs.copyFileSync(path.join(__dirname, 'index.html'), path.join(standaloneDir, 'index.html'));
+
+// Create standalone server.js
+const standaloneServerPath = path.join(standaloneDir, 'server.js');
+fs.writeFileSync(standaloneServerPath, `
+const express = require('express');
+const path = require('path');
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+// Serve static files
+app.use(express.static(path.join(__dirname)));
+
+// Handle all routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.listen(port, () => {
+  console.log('Standalone static site server running on port', port);
+});
+`);
+
+// Create standalone package.json
+const standalonePackagePath = path.join(standaloneDir, 'package.json');
+fs.writeFileSync(standalonePackagePath, JSON.stringify({
+  name: 'next-static-standalone',
+  version: '1.0.0',
+  main: 'server.js',
+  dependencies: {
+    express: '^4.18.0'
+  }
+}, null, 2));
+
 console.log('Static site ready for deployment');
 console.log('Complete Next.js plugin compatibility structure created');
+console.log('Standalone directory created for plugin compatibility');
 
 // Exit successfully
 process.exit(0);
