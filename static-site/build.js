@@ -10,9 +10,11 @@ const staticDir = path.join(nextDir, 'static');
 const chunksDir = path.join(staticDir, 'chunks');
 const pagesDir = path.join(chunksDir, 'pages');
 const cssDir = path.join(staticDir, 'css');
+const buildManifestDir = path.join(nextDir, 'server');
+const pagesManifestDir = path.join(nextDir, 'server', 'pages');
 
 // Create directories if they don't exist
-[staticDir, chunksDir, pagesDir, cssDir].forEach(dir => {
+[staticDir, chunksDir, pagesDir, cssDir, buildManifestDir, pagesManifestDir].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -46,6 +48,28 @@ requiredFiles.forEach(file => {
   }
 });
 
+// Create build-manifest.json (required by Next.js plugin)
+const buildManifestPath = path.join(nextDir, 'build-manifest.json');
+fs.writeFileSync(buildManifestPath, JSON.stringify({
+  pages: {
+    '/': ['static/chunks/pages/index.js']
+  },
+  devFiles: [],
+  ampDevFiles: [],
+  lowPriorityFiles: [],
+  rootMainFiles: [],
+  pages_404: [],
+  ampFirstPages: []
+}, null, 2));
+
+// Create pages-manifest.json (required by Next.js plugin)
+const pagesManifestPath = path.join(nextDir, 'server', 'pages-manifest.json');
+fs.writeFileSync(pagesManifestPath, JSON.stringify({
+  '/': 'pages/index.js',
+  '/_app': 'pages/_app.js',
+  '/_document': 'pages/_document.js'
+}, null, 2));
+
 // Create server.js (required by Next.js plugin)
 const serverPath = path.join(nextDir, 'server.js');
 fs.writeFileSync(serverPath, `
@@ -78,6 +102,18 @@ fs.writeFileSync(serverPackagePath, JSON.stringify({
     express: '^4.18.0'
   }
 }, null, 2));
+
+// Create next.config.js (required by Next.js plugin)
+const nextConfigPath = path.join(nextDir, 'next.config.js');
+fs.writeFileSync(nextConfigPath, `
+module.exports = {
+  output: 'standalone',
+  trailingSlash: true,
+  images: {
+    unoptimized: true
+  }
+};
+`);
 
 console.log('Static site ready for deployment');
 console.log('Complete Next.js plugin compatibility structure created');
