@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     }
 
     // Check if student is enrolled in the course
-    if (test.topic.course.enrollments.length === 0) {
+    if (!test.topic || test.topic.course.enrollments.length === 0) {
       return NextResponse.json({
         success: false,
         message: 'You must be enrolled in this course to take the test',
@@ -220,7 +220,7 @@ export async function GET(request: Request) {
     }
 
     // Check if student is enrolled
-    if (test.topic.course.enrollments.length === 0) {
+    if (!test.topic || test.topic.course.enrollments.length === 0) {
       return NextResponse.json({
         success: false,
         message: 'You must be enrolled in this course to take the test',

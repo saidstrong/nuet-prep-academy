@@ -1,180 +1,279 @@
-# NUET Prep Academy - Learning Platform
+# NUET Prep Academy
 
-A comprehensive learning management system for NUET (Nazarbayev University Entrance Test) preparation, built with Next.js, Tailwind CSS, and Prisma.
+A comprehensive online learning platform designed specifically for NUET (National University Entrance Test) preparation. Built with Next.js 14, TypeScript, and modern web technologies.
 
-## Features
+## 🚀 Features
 
-### 🔐 Authentication & User Management
-- **NextAuth.js** integration with credentials provider
-- **Role-based access control**: Owner, Tutor, Student
-- **Secure password hashing** with bcryptjs
-- **Protected routes** and API endpoints
+### 🎓 Core Learning Features
+- **Interactive Course Content**: Video lessons, text materials, PDFs, and quizzes
+- **Progress Tracking**: Real-time progress monitoring with achievements and streaks
+- **Gamification**: Points, badges, and leaderboards to motivate learning
+- **Multi-step Enrollment**: Tutor selection, payment options, and contact manager integration
+- **Quiz System**: Interactive quizzes with multiple choice questions and explanations
 
-### 👥 User Roles
-- **Owner**: Full system access, can add tutors, manage courses
-- **Tutor**: Can teach students, manage profile, view assigned students
-- **Student**: Can register, enroll in courses, view materials
+### 👥 User Management
+- **Role-based Access**: Students, Tutors, and Admins with different permissions
+- **Authentication**: Secure sign-in/sign-up with password reset functionality
+- **Profile Management**: Comprehensive user profiles with avatars and preferences
+- **Session Management**: Secure session handling with automatic timeout
 
-### 📚 Course Management
-- **Course catalog** with detailed information
-- **Enrollment system** with tutor assignment
-- **Student dashboard** showing enrolled courses
-- **Tutor capacity management** (max 30 students per tutor)
+### 🎨 User Experience
+- **Responsive Design**: Works perfectly on desktop, tablet, and mobile devices
+- **Modern UI**: Clean, professional interface with smooth animations
+- **Loading States**: Skeleton screens and loading indicators for better UX
+- **Error Handling**: Comprehensive error boundaries and user-friendly messages
+- **Accessibility**: ARIA labels, keyboard navigation, and screen reader support
 
-### 🎯 Profile System
-- **Comprehensive user profiles** with editable fields
-- **Profile photos** and personal information
-- **Role-specific profile views**
+### ⚡ Performance
+- **Caching Strategy**: Intelligent caching for API responses and static content
+- **Image Optimization**: Lazy loading and optimized images for faster loading
+- **Code Splitting**: Dynamic imports and lazy loading for optimal bundle size
+- **Performance Monitoring**: Real-time performance metrics and Web Vitals tracking
 
-## Tech Stack
+### 🔒 Security
+- **Input Validation**: Comprehensive validation using Zod schemas
+- **Rate Limiting**: Protection against abuse and spam
+- **CSRF Protection**: Cross-site request forgery prevention
+- **XSS Protection**: Input sanitization and output encoding
+- **SQL Injection Protection**: Parameterized queries with Prisma ORM
 
-- **Frontend**: Next.js 14, React 18, TypeScript
-- **Styling**: Tailwind CSS
-- **Database**: PostgreSQL with Prisma ORM
-- **Authentication**: NextAuth.js
-- **Forms**: React Hook Form with Zod validation
-- **Icons**: Lucide React
-- **Animations**: Framer Motion
+## 🛠️ Technology Stack
 
-## Prerequisites
+### Frontend
+- **Next.js 14**: React framework with App Router
+- **TypeScript**: Type-safe JavaScript
+- **Tailwind CSS**: Utility-first CSS framework
+- **Lucide React**: Beautiful icon library
+- **NextAuth.js**: Authentication and session management
 
+### Backend
+- **Prisma**: Modern database ORM
+- **Supabase**: Backend-as-a-Service with PostgreSQL
+- **REST API**: RESTful API endpoints
+- **Row Level Security**: Database-level security policies
+
+### Development Tools
+- **ESLint**: Code linting and formatting
+- **Prettier**: Code formatting
+- **TypeScript**: Static type checking
+- **Vercel**: Deployment and hosting
+
+## 📁 Project Structure
+
+```
+nuet-prep-academy/
+├── src/
+│   ├── app/                    # Next.js App Router pages
+│   │   ├── api/               # API routes
+│   │   ├── auth/              # Authentication pages
+│   │   ├── admin/             # Admin dashboard
+│   │   ├── student/           # Student dashboard
+│   │   ├── tutor/             # Tutor dashboard
+│   │   └── courses/           # Course pages
+│   ├── components/            # React components
+│   │   ├── ui/                # Reusable UI components
+│   │   └── ...                # Feature-specific components
+│   ├── lib/                   # Utility libraries
+│   │   ├── auth.ts            # Authentication configuration
+│   │   ├── prisma.ts          # Database client
+│   │   ├── cache.ts           # Caching utilities
+│   │   ├── performance.ts     # Performance monitoring
+│   │   └── validation.ts      # Input validation schemas
+│   └── styles/                # Global styles
+├── prisma/                    # Database schema and migrations
+├── public/                    # Static assets
+└── ...                        # Configuration files
+```
+
+## 🚀 Getting Started
+
+### Prerequisites
 - Node.js 18+ 
-- PostgreSQL database
 - npm or yarn
+- PostgreSQL database (or Supabase account)
 
-## Setup Instructions
+### Installation
 
-### 1. Install Dependencies
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-username/nuet-prep-academy.git
+   cd nuet-prep-academy
+   ```
 
-```bash
-npm install
-```
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-### 2. Environment Configuration
+3. **Set up environment variables**
+   ```bash
+   cp .env.example .env.local
+   ```
+   
+   Fill in the required environment variables:
+   ```env
+   DATABASE_URL="your-database-url"
+   NEXTAUTH_URL="http://localhost:3000"
+   NEXTAUTH_SECRET="your-secret-key"
+   NEXTAUTH_URL_INTERNAL="http://localhost:3000"
+   ```
 
-Create a `.env.local` file in the root directory:
+4. **Set up the database**
+   ```bash
+   npx prisma generate
+   npx prisma db push
+   ```
 
-```env
-# Database
-DATABASE_URL="postgresql://username:password@localhost:5432/nuet_prep_academy"
+5. **Run the development server**
+   ```bash
+   npm run dev
+   ```
 
-# NextAuth
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-secret-key-here"
+6. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
 
-# Formspree (for contact form)
-FORMSPREE_FORM_ID="your-formspree-form-id"
+## 📚 API Documentation
 
-# Google Analytics (optional)
-NEXT_PUBLIC_GA_ID="G-XXXXXXXXXX"
-```
-
-### 3. Database Setup
-
-```bash
-# Generate Prisma client
-npm run db:generate
-
-# Push schema to database
-npm run db:push
-
-# Seed database with initial data
-npm run db:seed
-```
-
-### 4. Development
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) to view the application.
-
-## Default Accounts
-
-After running the seed script, you'll have:
-
-- **Owner Account**:
-  - Email: `owner@nuetprep.academy`
-  - Password: `owner123`
-  - Role: `OWNER`
-
-## API Endpoints
-
-### Authentication
+### Authentication Endpoints
 - `POST /api/auth/signup` - User registration
-- `POST /api/auth/signin` - User login (via NextAuth)
+- `POST /api/auth/signin` - User login
+- `POST /api/auth/forgot-password` - Password reset request
+- `POST /api/auth/reset-password` - Password reset confirmation
 
-### Profile
-- `GET /api/profile` - Get user profile
-- `PUT /api/profile` - Update user profile
+### Course Endpoints
+- `GET /api/courses` - Get all courses
+- `GET /api/courses/[id]` - Get course details
+- `GET /api/courses/[id]/content` - Get course content
+- `GET /api/courses/[id]/progress` - Get course progress
+- `GET /api/courses/tutors` - Get available tutors
 
-### Courses
-- `GET /api/my-courses` - Get enrolled courses for current user
+### Student Endpoints
+- `POST /api/student/enroll` - Enroll in a course
+- `GET /api/student/enrollments` - Get student enrollments
+- `POST /api/student/progress` - Update progress
 
-### Admin
-- `POST /api/admin/add-tutor` - Add new tutor (Owner only)
+### Admin Endpoints
+- `GET /api/admin/notifications` - Get admin notifications
+- `PATCH /api/admin/notifications` - Update notification status
+- `GET /api/admin/courses` - Manage courses
+- `GET /api/admin/students` - Manage students
 
-## Database Schema
+## 🧪 Testing
 
-### Users
-- Basic info (name, email, password)
-- Role (STUDENT, TUTOR, OWNER)
-- Timestamps
-
-### Profiles
-- Extended user information
-- Bio, phone, avatar, address
-- Education and experience
-
-### Courses
-- Course details (title, description, price, duration)
-- Creator reference
-- Status management
-
-### Course Enrollments
-- Student-tutor-course relationships
-- Enrollment status tracking
-- Timestamps
-
-## Deployment
-
-### Vercel (Recommended)
-
-1. Push code to GitHub
-2. Import project in Vercel
-3. Set environment variables
-4. Deploy
-
-### Environment Variables for Production
-
-```env
-DATABASE_URL="your-production-postgresql-url"
-NEXTAUTH_URL="https://your-domain.vercel.app"
-NEXTAUTH_SECRET="your-production-secret"
-FORMSPREE_FORM_ID="your-formspree-id"
-NEXT_PUBLIC_GA_ID="your-ga-id"
+### Run the comprehensive test suite
+```bash
+node test-comprehensive.js
 ```
 
-## Security Features
+### Test individual components
+```bash
+npm run test
+```
 
-- **Password hashing** with bcryptjs
-- **JWT-based sessions** with NextAuth
-- **Role-based access control**
-- **Input validation** with Zod
-- **Protected API routes**
+### Test API endpoints
+```bash
+npm run test:api
+```
 
-## Contributing
+## 🚀 Deployment
+
+### Deploy to Vercel
+1. Push your code to GitHub
+2. Connect your repository to Vercel
+3. Set up environment variables in Vercel dashboard
+4. Deploy automatically on every push
+
+### Manual deployment
+```bash
+npm run build
+npm run start
+```
+
+## 🔧 Configuration
+
+### Environment Variables
+- `DATABASE_URL`: PostgreSQL connection string
+- `NEXTAUTH_URL`: Application URL
+- `NEXTAUTH_SECRET`: Secret key for JWT signing
+- `NEXTAUTH_URL_INTERNAL`: Internal URL for server-side requests
+
+### Database Configuration
+The application uses Prisma ORM with PostgreSQL. The schema is defined in `prisma/schema.prisma`.
+
+### Caching Configuration
+The application uses an in-memory cache with configurable TTL values in `src/lib/cache.ts`.
+
+## 📊 Performance Monitoring
+
+The application includes comprehensive performance monitoring:
+- **Web Vitals**: FCP, LCP, FID, CLS, TTFB
+- **API Response Times**: Automatic measurement of all API calls
+- **Component Performance**: Track component render times
+- **Cache Statistics**: Monitor cache hit rates and size
+
+## 🔒 Security Features
+
+- **Input Validation**: All inputs validated using Zod schemas
+- **Rate Limiting**: Protection against abuse
+- **CSRF Protection**: Cross-site request forgery prevention
+- **XSS Protection**: Input sanitization
+- **SQL Injection Protection**: Parameterized queries
+- **Authentication**: Secure session management
+- **Authorization**: Role-based access control
+
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## License
+## 📝 License
 
-This project is private and proprietary to NUET Prep Academy.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Support
+## 🆘 Support
 
-For technical support or questions, contact the development team.
+If you encounter any issues or have questions:
+1. Check the [Issues](https://github.com/your-username/nuet-prep-academy/issues) page
+2. Create a new issue with detailed information
+3. Contact the development team
+
+## 🎯 Roadmap
+
+### Phase 1: Core Features ✅
+- [x] User authentication and authorization
+- [x] Course management system
+- [x] Enrollment process
+- [x] Progress tracking
+
+### Phase 2: Enhanced Features ✅
+- [x] Gamification system
+- [x] Quiz and testing system
+- [x] Performance optimization
+- [x] Mobile responsiveness
+
+### Phase 3: Advanced Features 🚧
+- [ ] Real-time notifications
+- [ ] Video streaming integration
+- [ ] Advanced analytics
+- [ ] Mobile app
+
+### Phase 4: Enterprise Features 📋
+- [ ] Multi-tenant support
+- [ ] Advanced reporting
+- [ ] Integration APIs
+- [ ] White-label options
+
+## 🙏 Acknowledgments
+
+- Next.js team for the amazing framework
+- Vercel for hosting and deployment
+- Supabase for backend services
+- Prisma team for the excellent ORM
+- All contributors and users
+
+---
+
+**Built with ❤️ for NUET students**

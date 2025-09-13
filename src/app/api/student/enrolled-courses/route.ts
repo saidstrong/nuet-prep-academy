@@ -23,18 +23,14 @@ export async function GET() {
             topics: {
               include: {
                 materials: {
+                  where: {
+                    isPublished: true
+                  },
                   orderBy: {
                     order: 'asc',
                   },
                 },
                 tests: {
-                  include: {
-                    submissions: {
-                      where: {
-                        studentId: session.user.id,
-                      },
-                    },
-                  },
                   orderBy: {
                     createdAt: 'asc',
                   },
@@ -47,11 +43,15 @@ export async function GET() {
           },
         },
         tutor: {
-          include: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
             profile: {
               select: {
                 phone: true,
                 whatsapp: true,
+                specialization: true,
               },
             },
           },

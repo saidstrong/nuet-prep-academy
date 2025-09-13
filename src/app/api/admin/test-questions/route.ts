@@ -7,7 +7,7 @@ export async function GET() {
     // Check if user is authenticated and is admin/owner
     const session = await getServerSession(authOptions);
     
-    if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'OWNER')) {
+    if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'Unauthorized - Admin/Owner access required' },
         { status: 401 }
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     // Check if user is authenticated and is admin/owner
     const session = await getServerSession(authOptions);
     
-    if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'OWNER')) {
+    if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'Unauthorized - Admin/Owner access required' },
         { status: 401 }

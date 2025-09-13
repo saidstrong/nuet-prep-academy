@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Favicon Generator for NUET Prep Academy</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .favicon-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .favicon-item {
+            text-align: center;
+            padding: 15px;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+        }
+        .favicon-item canvas {
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+        }
+        .download-btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .download-btn:hover {
+            background: #1d4ed8;
+        }
+        .instructions {
+            background: #f0f9ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 NUET Prep Academy Favicon Generator</h1>
+        
+        <div class="instructions">
+            <h3>📋 Instructions:</h3>
+            <ol>
+                <li>Click "Generate Favicons" to create all required favicon files</li>
+                <li>Download each favicon by clicking the download buttons</li>
+                <li>Place all downloaded files in your <code>public/</code> folder</li>
+                <li>Replace the existing favicon.ico file</li>
+            </ol>
+        </div>
+
+        <button class="download-btn" onclick="generateFavicons()">Generate All Favicons</button>
+        
+        <div class="favicon-preview" id="faviconPreview"></div>
+    </div>
+
+    <script>
+        function generateFavicons() {
+            const sizes = [
+                { size: 16, name: 'favicon-16x16.png' },
+                { size: 32, name: 'favicon-32x32.png' },
+                { size: 180, name: 'apple-touch-icon.png' },
+                { size: 192, name: 'android-chrome-192x192.png' },
+                { size: 512, name: 'android-chrome-512x512.png' },
+                { size: 150, name: 'mstile-150x150.png' }
+            ];
+
+            const preview = document.getElementById('faviconPreview');
+            preview.innerHTML = '';
+
+            sizes.forEach(({ size, name }) => {
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+
+                // Create NUET-themed favicon
+                createNUETFavicon(ctx, size);
+
+                const container = document.createElement('div');
+                container.className = 'favicon-item';
+                
+                container.innerHTML = `
+                    <h4>${name}</h4>
+                    <div>${size}x${size}px</div>
+                `;
+                container.appendChild(canvas);
+
+                const downloadBtn = document.createElement('button');
+                downloadBtn.className = 'download-btn';
+                downloadBtn.textContent = 'Download';
+                downloadBtn.onclick = () => downloadCanvas(canvas, name);
+                
+                container.appendChild(downloadBtn);
+                preview.appendChild(container);
+            });
+        }
+
+        function createNUETFavicon(ctx, size) {
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const radius = size * 0.4;
+
+            // Background circle
+            ctx.fillStyle = '#2563eb';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Inner circle
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius * 0.7, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Letter "N" for NUET
+            ctx.fillStyle = '#2563eb';
+            ctx.font = `bold ${size * 0.5}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('N', centerX, centerY);
+
+            // Small graduation cap or book icon
+            if (size >= 32) {
+                ctx.fillStyle = '#2563eb';
+                ctx.fillRect(centerX - size * 0.15, centerY + size * 0.2, size * 0.3, size * 0.1);
+            }
+        }
+
+        function downloadCanvas(canvas, filename) {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        // Generate favicon.ico (16x16)
+        function generateFaviconIco() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32;
+            canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+            createNUETFavicon(ctx, 32);
+            
+            const link = document.createElement('a');
+            link.download = 'favicon.ico';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        // Add ICO download button
+        const icoBtn = document.createElement('button');
+        icoBtn.className = 'download-btn';
+        icoBtn.textContent = 'Download favicon.ico';
+        icoBtn.onclick = generateFaviconIco;
+        document.querySelector('.container').appendChild(icoBtn);
+    </script>
+</body>
+</html>

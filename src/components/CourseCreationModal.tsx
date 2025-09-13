@@ -1,11 +1,20 @@
 "use client";
-import { useState } from 'react';
-import { X, Plus, BookOpen, Clock, DollarSign, Users } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Plus, BookOpen, Clock, DollarSign, Users, User } from 'lucide-react';
 
 interface CourseCreationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCourseCreated: () => void;
+}
+
+interface Tutor {
+  id: string;
+  name: string;
+  email: string;
+  profile?: {
+    specialization?: string;
+  };
 }
 
 interface CourseFormData {
@@ -15,6 +24,10 @@ interface CourseFormData {
   duration: string;
   maxStudents: number;
   status: 'ACTIVE' | 'INACTIVE';
+  instructor: string;
+  difficulty: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+  estimatedHours: number;
+  assignedTutorIds: string[];
 }
 
 export default function CourseCreationModal({ isOpen, onClose, onCourseCreated }: CourseCreationModalProps) {
@@ -24,17 +37,54 @@ export default function CourseCreationModal({ isOpen, onClose, onCourseCreated }
     price: 0,
     duration: '',
     maxStudents: 40,
-    status: 'ACTIVE'
+    status: 'ACTIVE',
+    instructor: '',
+    difficulty: 'BEGINNER',
+    estimatedHours: 1,
+    assignedTutorIds: []
   });
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [tutors, setTutors] = useState<Tutor[]>([]);
+  const [tutorsLoading, setTutorsLoading] = useState(false);
+
+  // Fetch tutors when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchTutors();
+    }
+  }, [isOpen]);
+
+  const fetchTutors = async () => {
+    setTutorsLoading(true);
+    try {
+      const response = await fetch('/api/admin/tutors');
+      if (response.ok) {
+        const data = await response.json();
+        setTutors(data.tutors || []);
+      }
+    } catch (error) {
+      console.error('Error fetching tutors:', error);
+    } finally {
+      setTutorsLoading(false);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'price' || name === 'maxStudents' ? Number(value) : value
+      [name]: name === 'price' || name === 'maxStudents' || name === 'estimatedHours' ? Number(value) : value
+    }));
+  };
+
+  const handleTutorToggle = (tutorId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      assignedTutorIds: prev.assignedTutorIds.includes(tutorId)
+        ? prev.assignedTutorIds.filter(id => id !== tutorId)
+        : [...prev.assignedTutorIds, tutorId]
     }));
   };
 
@@ -64,7 +114,11 @@ export default function CourseCreationModal({ isOpen, onClose, onCourseCreated }
         price: 0,
         duration: '',
         maxStudents: 40,
-        status: 'ACTIVE'
+        status: 'ACTIVE',
+        instructor: '',
+        difficulty: 'BEGINNER',
+        estimatedHours: 1,
+        assignedTutorIds: []
       });
       
       onCourseCreated();
@@ -224,6 +278,113 @@ export default function CourseCreationModal({ isOpen, onClose, onCourseCreated }
                 <option value="INACTIVE">Inactive</option>
               </select>
             </div>
+          </div>
+
+          {/* Instructor and Difficulty Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Instructor */}
+            <div>
+              <label htmlFor="instructor" className="block text-sm font-medium text-gray-700 mb-2">
+                Instructor Name *
+              </label>
+              <input
+                type="text"
+                id="instructor"
+                name="instructor"
+                value={formData.instructor}
+                onChange={handleInputChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter instructor name"
+              />
+            </div>
+
+            {/* Difficulty */}
+            <div>
+              <label htmlFor="difficulty" className="block text-sm font-medium text-gray-700 mb-2">
+                Difficulty Level *
+              </label>
+              <select
+                id="difficulty"
+                name="difficulty"
+                value={formData.difficulty}
+                onChange={handleInputChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="BEGINNER">Beginner</option>
+                <option value="INTERMEDIATE">Intermediate</option>
+                <option value="ADVANCED">Advanced</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Estimated Hours */}
+          <div>
+            <label htmlFor="estimatedHours" className="block text-sm font-medium text-gray-700 mb-2">
+              Estimated Hours *
+            </label>
+            <input
+              type="number"
+              id="estimatedHours"
+              name="estimatedHours"
+              value={formData.estimatedHours}
+              onChange={handleInputChange}
+              required
+              min="1"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter estimated hours"
+            />
+          </div>
+
+          {/* Tutor Assignment */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Assign Tutors (Optional)
+            </label>
+            <p className="text-sm text-gray-600 mb-4">
+              Select tutors who will be available for this course. You can assign tutors later from the tutor management page.
+            </p>
+            
+            {tutorsLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <span className="ml-2 text-gray-600">Loading tutors...</span>
+              </div>
+            ) : tutors.length === 0 ? (
+              <div className="text-center py-6 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                <User className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-gray-600 mb-2">No tutors available</p>
+                <p className="text-sm text-gray-500">
+                  <a href="/admin/tutors" className="text-blue-600 hover:underline">
+                    Add tutors first
+                  </a> to assign them to courses
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-4">
+                {tutors.map((tutor) => (
+                  <label
+                    key={tutor.id}
+                    className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.assignedTutorIds.includes(tutor.id)}
+                      onChange={() => handleTutorToggle(tutor.id)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">{tutor.name}</div>
+                      <div className="text-sm text-gray-600">{tutor.email}</div>
+                      {tutor.profile?.specialization && (
+                        <div className="text-sm text-blue-600">{tutor.profile.specialization}</div>
+                      )}
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}

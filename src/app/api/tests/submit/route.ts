@@ -42,6 +42,24 @@ export async function POST(request: Request) {
               }
             }
           }
+        },
+        subtopic: {
+          include: {
+            topic: {
+              include: {
+                course: {
+                  select: {
+                    title: true
+                  }
+                },
+                questions: {
+                  include: {
+                    options: true
+                  }
+                }
+              }
+            }
+          }
         }
       }
     });
@@ -57,7 +75,7 @@ export async function POST(request: Request) {
     const enrollment = await prisma.courseEnrollment.findFirst({
       where: {
         studentId: session.user.id,
-        courseId: test.topic.courseId,
+        courseId: test.topic?.courseId || test.subtopic?.topic?.courseId,
         status: 'ACTIVE'
       }
     });
@@ -89,7 +107,8 @@ export async function POST(request: Request) {
     const processedAnswers: any[] = [];
 
     for (const answer of answers) {
-      const question = test.topic.questions.find(q => q.id === answer.questionId);
+      const questions = test.topic?.questions || test.subtopic?.topic?.questions || [];
+      const question = questions.find(q => q.id === answer.questionId);
       if (!question) continue;
 
       let isCorrect = false;

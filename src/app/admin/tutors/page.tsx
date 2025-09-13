@@ -1,63 +1,75 @@
 "use client";
+
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { 
-  Users, 
   Plus, 
-  Eye, 
   Edit, 
   Trash2, 
-  BookOpen, 
-  Target, 
-  TrendingUp,
-  Mail,
-  Phone,
-  MessageCircle
+  Search, 
+  Filter, 
+  User, 
+  Mail, 
+  Phone, 
+  BookOpen,
+  Users,
+  Star,
+  MoreVertical
 } from 'lucide-react';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
-import TutorCreationModal from '@/components/TutorCreationModal';
 
 interface Tutor {
   id: string;
   name: string;
   email: string;
   role: string;
-  assignedCourses: string[];
-  totalStudents: number;
+  createdAt: string;
   profile?: {
-    bio?: string;
     phone?: string;
-    whatsapp?: string;
+    specialization?: string;
     experience?: string;
+    bio?: string;
   };
+  assignedCourses?: Course[];
+}
+
+interface Course {
+  id: string;
+  title: string;
+  status: string;
 }
 
 export default function TutorManagementPage() {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const router = useRouter();
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isTutorModalOpen, setIsTutorModalOpen] = useState(false);
-  const [selectedTutor, setSelectedTutor] = useState<Tutor | null>(null);
-  const [showTutorDetails, setShowTutorDetails] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingTutor, setEditingTutor] = useState<Tutor | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  // Tutor form state
+  const [tutorForm, setTutorForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    specialization: '',
+    experience: '',
+    bio: ''
+  });
 
   useEffect(() => {
-    if (status === 'loading') return;
-    
-    if (!session || session.user.role !== 'ADMIN') {
+    if (session?.user?.role === 'ADMIN') {
+      fetchTutors();
+    } else {
       router.push('/auth/signin');
-      return;
     }
-
-    fetchTutors();
-  }, [session, status, router]);
+  }, [session, router]);
 
   const fetchTutors = async () => {
     try {
-      setLoading(true);
-      const response = await fetch('/api/admin/tutors');
+      const response = await fetch('/api/admin/tutors', { credentials: 'include' });
       if (response.ok) {
         const data = await response.json();
         setTutors(data.tutors || []);
@@ -69,281 +81,351 @@ export default function TutorManagementPage() {
     }
   };
 
-  const handleTutorCreated = () => {
-    fetchTutors();
+  const handleCreateTutor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setActionLoading(true);
+
+    try {
+      const response = await fetch('/api/admin/tutors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          ...tutorForm,
+          role: 'TUTOR'
+        })
+      });
+
+      if (response.ok) {
+        await fetchTutors();
+        setShowAddForm(false);
+        setTutorForm({ name: '', email: '', phone: '', specialization: '', experience: '', bio: '' });
+      } else {
+        const error = await response.json();
+        alert(`Failed to create tutor: ${error.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error creating tutor:', error);
+      alert('Network error. Please try again.');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const viewTutorDetails = (tutor: Tutor) => {
-    setSelectedTutor(tutor);
-    setShowTutorDetails(true);
+  const handleUpdateTutor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTutor) return;
+
+    setActionLoading(true);
+
+    try {
+      const response = await fetch(`/api/admin/tutors/${editingTutor.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(tutorForm)
+      });
+
+      if (response.ok) {
+        await fetchTutors();
+        setEditingTutor(null);
+        setTutorForm({ name: '', email: '', phone: '', specialization: '', experience: '', bio: '' });
+      } else {
+        const error = await response.json();
+        alert(`Failed to update tutor: ${error.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error updating tutor:', error);
+      alert('Network error. Please try again.');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const closeTutorDetails = () => {
-    setShowTutorDetails(false);
-    setSelectedTutor(null);
+  const handleDeleteTutor = async (tutorId: string) => {
+    if (!confirm('Are you sure you want to delete this tutor?')) return;
+
+    setActionLoading(true);
+
+    try {
+      const response = await fetch(`/api/admin/tutors/${tutorId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        await fetchTutors();
+      } else {
+        const error = await response.json();
+        alert(`Failed to delete tutor: ${error.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting tutor:', error);
+      alert('Network error. Please try again.');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  if (status === 'loading' || loading) {
+  const startEdit = (tutor: Tutor) => {
+    setEditingTutor(tutor);
+    setTutorForm({
+      name: tutor.name,
+      email: tutor.email,
+      phone: tutor.profile?.phone || '',
+      specialization: tutor.profile?.specialization || '',
+      experience: tutor.profile?.experience || '',
+      bio: tutor.profile?.bio || ''
+    });
+  };
+
+  const filteredTutors = tutors.filter(tutor =>
+    tutor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    tutor.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    tutor.profile?.specialization?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading tutor management...</p>
-          </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading tutors...</p>
         </div>
-        <Footer />
       </div>
     );
   }
 
-  if (!session || session.user.role !== 'ADMIN') {
-    return null;
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
-      
-      <div className="container mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Tutor Management</h1>
-              <p className="text-gray-600">Manage tutors, view performance, and assign courses</p>
+              <h1 className="text-3xl font-bold text-gray-900">Tutor Management</h1>
+              <p className="mt-2 text-gray-600">Manage tutors and their course assignments</p>
             </div>
             <button
-              onClick={() => setIsTutorModalOpen(true)}
-              className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+              onClick={() => setShowAddForm(true)}
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              <Plus className="w-5 h-5" />
-              <span>Add New Tutor</span>
+              <Plus className="w-5 h-5 mr-2" />
+              Add Tutor
             </button>
           </div>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-blue-100 text-blue-600">
-                <Users className="w-6 h-6" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Tutors</p>
-                <p className="text-2xl font-semibold text-gray-900">{tutors.length}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-green-100 text-green-600">
-                <BookOpen className="w-6 h-6" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Active Courses</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {tutors.reduce((total, tutor) => total + tutor.assignedCourses.length, 0)}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-purple-100 text-purple-600">
-                <Target className="w-6 h-6" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Students</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {tutors.reduce((total, tutor) => total + tutor.totalStudents, 0)}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-orange-100 text-orange-600">
-                <TrendingUp className="w-6 h-6" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Avg Students/Tutor</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {tutors.length > 0 
-                    ? Math.round(tutors.reduce((total, tutor) => total + tutor.totalStudents, 0) / tutors.length)
-                    : 0
-                  }
-                </p>
-              </div>
+        {/* Search and Filters */}
+        <div className="mb-6">
+          <div className="flex items-center space-x-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search tutors by name, email, or specialization..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
             </div>
           </div>
         </div>
 
-        {/* Tutors Table */}
+        {/* Tutors List */}
         <div className="bg-white rounded-lg shadow">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">All Tutors</h2>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tutor</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned Courses</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Students</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {tutors.map((tutor) => (
-                  <tr key={tutor.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">{tutor.name}</div>
-                        <div className="text-sm text-gray-500">{tutor.email}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-2">
-                        {tutor.profile?.phone && (
-                          <div className="flex items-center space-x-1 text-gray-500">
-                            <Phone className="w-4 h-4" />
-                            <span className="text-xs">{tutor.profile.phone}</span>
-                          </div>
-                        )}
-                        {tutor.profile?.whatsapp && (
-                          <div className="flex items-center space-x-1 text-gray-500">
-                            <MessageCircle className="w-4 h-4" />
-                            <span className="text-xs">{tutor.profile.whatsapp}</span>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {tutor.assignedCourses.length} courses
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {tutor.totalStudents} students
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => viewTutorDetails(tutor)}
-                        className="text-blue-600 hover:text-blue-900 mr-3 flex items-center space-x-1"
-                      >
-                        <Eye className="w-4 h-4" />
-                        <span>View</span>
-                      </button>
-                      <button className="text-green-600 hover:text-green-900 mr-3 flex items-center space-x-1">
-                        <Edit className="w-4 h-4" />
-                        <span>Edit</span>
-                      </button>
-                      <button className="text-red-600 hover:text-red-900 flex items-center space-x-1">
-                        <Trash2 className="w-4 h-4" />
-                        <span>Remove</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <h3 className="text-lg font-medium text-gray-900">
+              Tutors ({filteredTutors.length})
+            </h3>
           </div>
 
-          {tutors.length === 0 && (
+          <div className="divide-y divide-gray-200">
+            {filteredTutors.map((tutor) => (
+              <div key={tutor.id} className="p-6 hover:bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                      <User className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-lg font-medium text-gray-900">{tutor.name}</h4>
+                      <div className="flex items-center space-x-4 mt-1">
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Mail className="w-4 h-4 mr-1" />
+                          {tutor.email}
+                        </div>
+                        {tutor.profile?.phone && (
+                          <div className="flex items-center text-sm text-gray-600">
+                            <Phone className="w-4 h-4 mr-1" />
+                            {tutor.profile.phone}
+                          </div>
+                        )}
+                      </div>
+                      {tutor.profile?.specialization && (
+                        <p className="text-sm text-blue-600 mt-1">
+                          {tutor.profile.specialization}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <div className="text-right">
+                      <div className="text-sm text-gray-600">
+                        {tutor.assignedCourses?.length || 0} courses
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Joined {new Date(tutor.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <button
+                        onClick={() => startEdit(tutor)}
+                        className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                        title="Edit tutor"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTutor(tutor.id)}
+                        className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                        title="Delete tutor"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {filteredTutors.length === 0 && (
             <div className="text-center py-12">
-              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No tutors yet</h3>
-              <p className="text-gray-600 mb-4">Start building your teaching team by adding the first tutor.</p>
-              <button
-                onClick={() => setIsTutorModalOpen(true)}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-              >
-                Add First Tutor
-              </button>
+              <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No tutors found</h3>
+              <p className="text-gray-600">
+                {searchTerm ? 'Try adjusting your search terms' : 'Get started by adding your first tutor'}
+              </p>
             </div>
           )}
         </div>
-      </div>
-      
-      <Footer />
 
-      {/* Tutor Creation Modal */}
-      <TutorCreationModal
-        isOpen={isTutorModalOpen}
-        onClose={() => setIsTutorModalOpen(false)}
-        onTutorCreated={handleTutorCreated}
-      />
+        {/* Add/Edit Tutor Modal */}
+        {(showAddForm || editingTutor) && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-6 border-b">
+                <h2 className="text-xl font-semibold">
+                  {editingTutor ? 'Edit Tutor' : 'Add New Tutor'}
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowAddForm(false);
+                    setEditingTutor(null);
+                    setTutorForm({ name: '', email: '', phone: '', specialization: '', experience: '', bio: '' });
+                  }}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ×
+                </button>
+              </div>
 
-      {/* Tutor Details Modal */}
-      {showTutorDetails && selectedTutor && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Tutor Details</h2>
-              <button
-                onClick={closeTutorDetails}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                ×
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-6">
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">{selectedTutor.name}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <form onSubmit={editingTutor ? handleUpdateTutor : handleCreateTutor} className="p-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Email</label>
-                    <p className="text-sm text-gray-900">{selectedTutor.email}</p>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                    <input
+                      type="text"
+                      value={tutorForm.name}
+                      onChange={(e) => setTutorForm({ ...tutorForm, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
                   </div>
-                  {selectedTutor.profile?.phone && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Phone</label>
-                      <p className="text-sm text-gray-900">{selectedTutor.profile.phone}</p>
-                    </div>
-                  )}
-                  {selectedTutor.profile?.whatsapp && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">WhatsApp</label>
-                      <p className="text-sm text-gray-900">{selectedTutor.profile.whatsapp}</p>
-                    </div>
-                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                    <input
+                      type="email"
+                      value={tutorForm.email}
+                      onChange={(e) => setTutorForm({ ...tutorForm, email: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {selectedTutor.profile?.experience && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                    <input
+                      type="tel"
+                      value={tutorForm.phone}
+                      onChange={(e) => setTutorForm({ ...tutorForm, phone: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="+7 707 123 45 67"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Specialization</label>
+                    <input
+                      type="text"
+                      value={tutorForm.specialization}
+                      onChange={(e) => setTutorForm({ ...tutorForm, specialization: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="e.g., NUET Mathematics, English, Critical Thinking"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Teaching Experience</label>
-                  <p className="text-sm text-gray-900">{selectedTutor.profile.experience}</p>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Experience</label>
+                  <input
+                    type="text"
+                    value={tutorForm.experience}
+                    onChange={(e) => setTutorForm({ ...tutorForm, experience: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g., 5 years teaching experience"
+                  />
                 </div>
-              )}
 
-              {selectedTutor.profile?.bio && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Bio</label>
-                  <p className="text-sm text-gray-900">{selectedTutor.profile.bio}</p>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+                  <textarea
+                    value={tutorForm.bio}
+                    onChange={(e) => setTutorForm({ ...tutorForm, bio: e.target.value })}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Brief description of the tutor's background and expertise..."
+                  />
                 </div>
-              )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="text-sm font-medium text-blue-900">Assigned Courses</div>
-                  <div className="text-2xl font-bold text-blue-600">{selectedTutor.assignedCourses.length}</div>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddForm(false);
+                      setEditingTutor(null);
+                      setTutorForm({ name: '', email: '', phone: '', specialization: '', experience: '', bio: '' });
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={actionLoading}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  >
+                    {actionLoading ? 'Saving...' : (editingTutor ? 'Update Tutor' : 'Create Tutor')}
+                  </button>
                 </div>
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <div className="text-sm font-medium text-green-900">Total Students</div>
-                  <div className="text-2xl font-bold text-green-600">{selectedTutor.totalStudents}</div>
-                </div>
-              </div>
+              </form>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

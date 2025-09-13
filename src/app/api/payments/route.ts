@@ -59,7 +59,7 @@ export async function POST(request: Request) {
         enrollmentId,
         courseId: enrollment.course.id,
         amount: parseFloat(amount),
-        method: paymentMethod,
+        paymentMethod: paymentMethod,
         status: 'PENDING',
         studentId: session.user.id,
       },

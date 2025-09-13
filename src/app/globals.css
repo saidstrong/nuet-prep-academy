@@ -5,6 +5,24 @@
 :root {
   --background: #ffffff;
   --foreground: #0f172a;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f8fafc;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #2563eb;
+  --radius: 0.5rem;
+}
+
+* {
+  border-color: hsl(var(--border));
 }
 
 html,
@@ -20,17 +38,215 @@ html {
 body {
   color: var(--foreground);
   background: var(--background);
+  font-feature-settings: "rlig" 1, "calt" 1;
 }
 
+/* Container utilities */
 .container-section {
   @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
 }
 
+.container-sm {
+  @apply max-w-3xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+.container-lg {
+  @apply max-w-5xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+/* Button utilities */
 .btn-primary {
-  @apply inline-flex items-center justify-center rounded-md bg-primary text-white px-5 py-3 text-sm sm:text-base font-medium shadow hover:bg-primary-light transition-colors;
+  @apply inline-flex items-center justify-center rounded-lg bg-blue-600 text-white px-5 py-3 text-sm sm:text-base font-medium shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200;
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center rounded-lg bg-slate-600 text-white px-5 py-3 text-sm sm:text-base font-medium shadow-sm hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-all duration-200;
 }
 
 .btn-accent {
-  @apply inline-flex items-center justify-center rounded-md bg-accent text-white px-4 py-2 text-sm font-medium shadow hover:opacity-90 transition-opacity;
+  @apply inline-flex items-center justify-center rounded-lg bg-orange-500 text-white px-5 py-3 text-sm sm:text-base font-medium shadow-sm hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-all duration-200;
+}
+
+.btn-outline {
+  @apply inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 px-5 py-3 text-sm sm:text-base font-medium shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200;
+}
+
+.btn-ghost {
+  @apply inline-flex items-center justify-center rounded-lg text-slate-700 px-5 py-3 text-sm sm:text-base font-medium hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-all duration-200;
+}
+
+/* Animation utilities */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Text utilities */
+.text-balance {
+  text-wrap: balance;
+}
+
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* Focus utilities */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+}
+
+/* Hover utilities */
+.hover-lift {
+  @apply transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg;
+}
+
+.hover-scale {
+  @apply transition-transform duration-200 hover:scale-105;
+}
+
+/* Loading utilities */
+.loading-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Scrollbar utilities */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Card utilities */
+.card-hover {
+  @apply transition-all duration-200 hover:shadow-lg hover:-translate-y-1;
+}
+
+/* Form utilities */
+.form-input {
+  @apply w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-slate-700 mb-1;
+}
+
+.form-error {
+  @apply text-sm text-red-600 mt-1;
+}
+
+.form-helper {
+  @apply text-sm text-slate-500 mt-1;
+}
+
+/* Responsive utilities */
+@media (max-width: 640px) {
+  .container-section {
+    @apply px-4;
+  }
+}
+
+/* Print utilities */
+@media print {
+  .no-print {
+    display: none !important;
+  }
 }
 

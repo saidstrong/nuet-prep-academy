@@ -1,12 +1,50 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
-export async function POST(request: Request) {
+export async function GET() {
   try {
-    // Check if user is authenticated and is admin
     const session = await getServerSession(authOptions);
-    
+
+    if (!session || session.user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Unauthorized - Admin access required' },
+        { status: 401 }
+      );
+    }
+
+    const tests = await prisma.test.findMany({
+      include: {
+        topic: {
+          include: {
+            course: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    return NextResponse.json({
+      success: true,
+      tests
+    });
+
+  } catch (error: any) {
+    console.error('Error fetching tests:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch tests' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
     if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
@@ -15,41 +53,20 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { title, description, duration, totalPoints, isActive, topicId } = body;
+    const { topicId, title, description, duration, totalPoints } = body;
 
-    // Validate required fields
-    if (!title || !topicId || duration === undefined || totalPoints === undefined) {
+    if (!topicId || !title || !description || !duration || !totalPoints) {
       return NextResponse.json(
-        { error: 'Missing required fields: title, topicId, duration, totalPoints' },
+        { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    // Validate ranges
-    if (duration < 1 || duration > 480) {
-      return NextResponse.json(
-        { error: 'Duration must be between 1 and 480 minutes' },
-        { status: 400 }
-      );
-    }
-
-    if (totalPoints < 1 || totalPoints > 1000) {
-      return NextResponse.json(
-        { error: 'Total points must be between 1 and 1000' },
-        { status: 400 }
-      );
-    }
-
-    // Lazy import to prevent build-time issues
-    const { prisma } = await import('@/lib/prisma');
-    
-    // Verify the topic exists and user has permission to the course
+    // Verify topic exists
     const topic = await prisma.topic.findUnique({
       where: { id: topicId },
       include: {
-        course: {
-          select: { id: true, creatorId: true }
-        }
+        course: true
       }
     });
 
@@ -60,34 +77,19 @@ export async function POST(request: Request) {
       );
     }
 
-    if (topic.course.creatorId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'You can only add tests to topics in courses you created' },
-        { status: 403 }
-      );
-    }
-
-    // Create the test
     const test = await prisma.test.create({
       data: {
+        topicId,
         title,
-        description: description || '',
-        duration,
-        totalPoints,
-        isActive: isActive !== undefined ? isActive : true,
-        topicId
+        description,
+        duration: parseInt(duration),
+        totalPoints: parseInt(totalPoints),
+        isActive: true
       },
       include: {
         topic: {
-          select: {
-            id: true,
-            title: true,
-            course: {
-              select: {
-                id: true,
-                title: true
-              }
-            }
+          include: {
+            course: true
           }
         }
       }
@@ -95,17 +97,13 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      test,
-      message: 'Test created successfully'
+      test
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating test:', error);
     return NextResponse.json(
-      { 
-        error: 'Failed to create test',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { error: 'Failed to create test' },
       { status: 500 }
     );
   }

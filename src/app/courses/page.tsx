@@ -1,288 +1,502 @@
 "use client";
-import { useSession } from 'next-auth/react';
+
 import { useState, useEffect } from 'react';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
-import { BookOpen, Users, Clock, DollarSign, Star, MessageCircle, UserCheck } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import {
+  BookOpen, Users, Clock, Star, PlayCircle, FileText, 
+  Presentation, Video, Link, Search, Filter, ChevronRight,
+  Award, Target, Calendar, DollarSign, Eye, Heart, Bookmark
+} from 'lucide-react';
 
 interface Course {
   id: string;
   title: string;
   description: string;
+  instructor: string;
+  difficulty: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+  estimatedHours: number;
   price: number;
   duration: string;
-  status: string;
   maxStudents: number;
-  enrollments: any[];
-  topics: any[];
-  creator: {
-    id: string;
-    name: string;
-    email: string;
-  };
-}
-
-interface Tutor {
-  id: string;
-  name: string;
-  email: string;
-  profile?: {
-    bio?: string;
-    phone?: string;
-    whatsapp?: string;
-    experience?: string;
-  };
-  tutorEnrollments: any[];
+  status: 'DRAFT' | 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  totalTopics: number;
+  totalMaterials: number;
+  totalTests: number;
+  enrolledStudents: number;
+  completionRate: number;
+  thumbnail?: string;
+  rating?: number;
+  reviews?: number;
 }
 
 export default function CoursesPage() {
   const { data: session } = useSession();
+  const router = useRouter();
   const [courses, setCourses] = useState<Course[]>([]);
-  const [tutors, setTutors] = useState<Tutor[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [selectedTutor, setSelectedTutor] = useState<Tutor | null>(null);
-  const [showEnrollmentModal, setShowEnrollmentModal] = useState(false);
-  const [enrolling, setEnrolling] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterDifficulty, setFilterDifficulty] = useState<string>('all');
+  const [filterPrice, setFilterPrice] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('newest');
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchCourses();
-    fetchTutors();
-  }, []);
+    if (session) {
+      fetchUserPreferences();
+    }
+  }, [session]);
 
-  const fetchCourses = async () => {
+  const fetchUserPreferences = async () => {
+    // Only fetch preferences if user is a student
+    if (!session || session.user.role !== 'STUDENT') {
+      return;
+    }
+
     try {
-      const response = await fetch('/api/courses');
-      const data = await response.json();
-      
-      if (data.success) {
-        setCourses(data.courses);
+      const [favoritesRes, bookmarksRes] = await Promise.all([
+        fetch('/api/student/favorites', { credentials: 'include' }),
+        fetch('/api/student/bookmarks', { credentials: 'include' })
+      ]);
+
+      if (favoritesRes.ok) {
+        const favoritesData = await favoritesRes.json();
+        setFavorites(new Set(favoritesData.favorites?.map((f: any) => f.courseId) || []));
+      }
+
+      if (bookmarksRes.ok) {
+        const bookmarksData = await bookmarksRes.json();
+        setBookmarks(new Set(bookmarksData.bookmarks?.map((b: any) => b.courseId) || []));
       }
     } catch (error) {
-      console.error('Error fetching courses:', error);
+      console.error('Error fetching user preferences:', error);
     }
   };
 
-  const fetchTutors = async () => {
+  const fetchCourses = async () => {
     try {
-      const response = await fetch('/api/tutors');
-      const data = await response.json();
+      setLoading(true);
+      console.log('🔍 Fetching student courses...');
+      const response = await fetch('/api/courses', { credentials: 'include' });
       
-      if (data.success) {
-        setTutors(data.tutors);
+      console.log('📡 Student courses response status:', response.status);
+      console.log('📡 Student courses response ok:', response.ok);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('📚 Student courses data received:', data);
+        console.log('📚 Student courses array:', data.courses);
+        console.log('📚 Student courses count:', data.courses?.length || 0);
+        
+        // Filter out test courses and only show real NUET courses
+        const realCourses = (data.courses || []).filter((course: Course) => 
+          course.id.startsWith('course-') && 
+          course.title !== 'Test' && 
+          course.title !== 'SAID' &&
+          course.description !== 'Test' &&
+          course.description !== 'Said'
+        );
+        
+        setCourses(realCourses);
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Student courses API Error:', errorData);
       }
     } catch (error) {
-      console.error('Error fetching tutors:', error);
+      console.error('❌ Error fetching student courses:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEnroll = async () => {
-    if (!selectedCourse || !selectedTutor || !session) return;
+  const filteredCourses = courses.filter(course => {
+    const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         course.instructor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         course.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDifficulty = filterDifficulty === 'all' || course.difficulty === filterDifficulty;
+    const matchesPrice = filterPrice === 'all' || 
+                        (filterPrice === 'free' && course.price === 0) ||
+                        (filterPrice === 'paid' && course.price > 0);
+    return matchesSearch && matchesDifficulty && matchesPrice && course.status === 'ACTIVE';
+  }).sort((a, b) => {
+    switch (sortBy) {
+      case 'newest':
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      case 'oldest':
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      case 'price-low':
+        return a.price - b.price;
+      case 'price-high':
+        return b.price - a.price;
+      case 'rating':
+        return (b.rating || 0) - (a.rating || 0);
+      default:
+        return 0;
+    }
+  });
 
-    setEnrolling(true);
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case 'BEGINNER': return 'bg-green-100 text-green-800';
+      case 'INTERMEDIATE': return 'bg-yellow-100 text-yellow-800';
+      case 'ADVANCED': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const handleViewCourse = (courseId: string) => {
+    router.push(`/courses/${courseId}`);
+  };
+
+  const handleToggleFavorite = async (courseId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!session) {
+      router.push('/auth/signin');
+      return;
+    }
+
+    const isCurrentlyFavorite = favorites.has(courseId);
+    
     try {
-      const response = await fetch('/api/enrollments', {
+      const response = await fetch('/api/courses/favorite', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          courseId: selectedCourse.id,
-          tutorId: selectedTutor.id,
+        credentials: 'include',
+        body: JSON.stringify({ 
+          courseId, 
+          isFavorite: !isCurrentlyFavorite 
         }),
       });
 
       if (response.ok) {
-        setShowEnrollmentModal(false);
-        setSelectedCourse(null);
-        setSelectedTutor(null);
-        // Refresh courses to update enrollment counts
-        fetchCourses();
-        alert('Successfully enrolled in the course!');
-      } else {
-        const error = await response.json();
-        alert(error.message || 'Failed to enroll in course');
+        setFavorites(prev => {
+          const newFavorites = new Set(prev);
+          if (isCurrentlyFavorite) {
+            newFavorites.delete(courseId);
+          } else {
+            newFavorites.add(courseId);
+          }
+          return newFavorites;
+        });
       }
     } catch (error) {
-      console.error('Error enrolling:', error);
-      alert('An error occurred while enrolling');
-    } finally {
-      setEnrolling(false);
+      console.error('Error toggling favorite:', error);
     }
   };
 
-  const getAvailableTutors = (course: Course) => {
-    return tutors.filter(tutor => {
-      const tutorEnrollments = tutor.tutorEnrollments.filter(
-        (enrollment: any) => enrollment.courseId === course.id
-      );
-      return tutorEnrollments.length < 30; // Max 30 students per tutor
-    });
+  const handleToggleBookmark = async (courseId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!session) {
+      router.push('/auth/signin');
+      return;
+    }
+
+    const isCurrentlyBookmarked = bookmarks.has(courseId);
+    
+    try {
+      const response = await fetch('/api/courses/bookmark', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          courseId, 
+          isBookmarked: !isCurrentlyBookmarked 
+        }),
+      });
+
+      if (response.ok) {
+        setBookmarks(prev => {
+          const newBookmarks = new Set(prev);
+          if (isCurrentlyBookmarked) {
+            newBookmarks.delete(courseId);
+          } else {
+            newBookmarks.add(courseId);
+          }
+          return newBookmarks;
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+    }
   };
 
-  const isEnrolled = (courseId: string) => {
-    if (!session) return false;
-    return courses.some(course => 
-      course.id === courseId && 
-      course.enrollments.some((enrollment: any) => enrollment.studentId === session.user.id)
-    );
+  const getDifficultyIcon = (difficulty: string) => {
+    switch (difficulty) {
+      case 'BEGINNER': return '🟢';
+      case 'INTERMEDIATE': return '🟡';
+      case 'ADVANCED': return '🔴';
+      default: return '⚪';
+    }
   };
 
   if (loading) {
     return (
-      <main>
-        <Header />
-        <div className="container-section py-16">
-          <div className="text-center">Loading...</div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading courses...</p>
         </div>
-        <Footer />
-      </main>
+      </div>
     );
   }
 
   return (
-    <main>
-      <Header />
-      <div className="container-section py-8">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-slate-900 mb-4">Available Courses</h1>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              Choose from our comprehensive selection of courses designed to help you excel in your studies
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6">
+              Discover Amazing Courses
+            </h1>
+            <p className="text-xl md:text-2xl mb-8 text-blue-100">
+              Learn from the best instructors and advance your skills
             </p>
+            <div className="max-w-2xl mx-auto">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search courses, instructors, or topics..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-12 pr-4 py-4 text-lg rounded-lg text-gray-900 focus:ring-4 focus:ring-blue-300 focus:outline-none"
+                />
+              </div>
+            </div>
           </div>
+        </div>
+      </div>
 
-          {/* Courses Grid */}
+      {/* Filters and Sort */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center space-x-2">
+                <Filter className="w-4 h-4 text-gray-500" />
+                <span className="text-sm font-medium text-gray-700">Filters:</span>
+              </div>
+              <select
+                value={filterDifficulty}
+                onChange={(e) => setFilterDifficulty(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="all">All Levels</option>
+                <option value="BEGINNER">Beginner</option>
+                <option value="INTERMEDIATE">Intermediate</option>
+                <option value="ADVANCED">Advanced</option>
+              </select>
+              <select
+                value={filterPrice}
+                onChange={(e) => setFilterPrice(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="all">All Prices</option>
+                <option value="free">Free</option>
+                <option value="paid">Paid</option>
+              </select>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium text-gray-700">Sort by:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+                <option value="rating">Rating</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Courses Grid */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {filteredCourses.length === 0 ? (
+          <div className="text-center py-12">
+            <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No courses found</h3>
+            <p className="text-gray-600">Try adjusting your search or filters to find more courses.</p>
+          </div>
+        ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {courses.map((course) => (
-              <div key={course.id} className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-semibold text-slate-900">{course.title}</h3>
-                    {isEnrolled(course.id) && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        <UserCheck className="w-3 h-3 mr-1" />
-                        Enrolled
-                      </span>
-                    )}
+            {filteredCourses.map((course) => (
+              <div
+                key={course.id}
+                className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden group cursor-pointer"
+                onClick={() => router.push(`/courses/${course.id}`)}
+              >
+                {/* Course Thumbnail */}
+                <div className="relative h-48 bg-gradient-to-br from-blue-500 to-purple-600">
+                  <div className="absolute inset-0 bg-black bg-opacity-20"></div>
+                  <div className="absolute top-4 left-4">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getDifficultyColor(course.difficulty)}`}>
+                      {getDifficultyIcon(course.difficulty)} {course.difficulty}
+                    </span>
                   </div>
-                  
-                  <p className="text-slate-600 mb-4 line-clamp-3">{course.description}</p>
-                  
-                  <div className="space-y-3 mb-6">
-                    <div className="flex items-center text-sm text-slate-500">
-                      <Clock className="w-4 h-4 mr-2" />
-                      <span>{course.duration}</span>
+                  <div className="absolute top-4 right-4">
+                    <button 
+                      onClick={(e) => handleToggleFavorite(course.id, e)}
+                      className={`p-2 rounded-full transition-colors ${
+                        favorites.has(course.id) 
+                          ? 'bg-red-500 bg-opacity-80 hover:bg-opacity-100' 
+                          : 'bg-white bg-opacity-20 hover:bg-opacity-30'
+                      }`}
+                    >
+                      <Heart className={`w-5 h-5 text-white ${favorites.has(course.id) ? 'fill-current' : ''}`} />
+                    </button>
+                  </div>
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <div className="flex items-center justify-between text-white">
+                      <div className="flex items-center space-x-2">
+                        <Star className="w-4 h-4 fill-current" />
+                        <span className="text-sm font-medium">{course.rating || 4.5}</span>
+                        <span className="text-sm opacity-75">({course.reviews || 0} reviews)</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold">
+                          {course.price === 0 ? 'Free' : `${course.price.toLocaleString()} ₸`}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center text-sm text-slate-500">
-                      <BookOpen className="w-4 h-4 mr-2" />
-                      <span>{course.topics.length} topics</span>
-                    </div>
-                    <div className="flex items-center text-sm text-slate-500">
+                  </div>
+                </div>
+
+                {/* Course Content */}
+                <div className="p-6">
+                  <div className="mb-3">
+                    <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                      {course.title}
+                    </h3>
+                    <p className="text-gray-600 text-sm line-clamp-2">{course.description}</p>
+                  </div>
+
+                  <div className="mb-4">
+                    <div className="flex items-center text-sm text-gray-500 mb-2">
                       <Users className="w-4 h-4 mr-2" />
-                      <span>{course.enrollments.length} / {course.maxStudents} students</span>
+                      <span>by {course.instructor}</span>
                     </div>
-                    <div className="flex items-center text-sm text-slate-500">
-                      <DollarSign className="w-4 h-4 mr-2" />
-                      <span className="font-semibold text-slate-900">{course.price.toLocaleString()} ₸</span>
+                    <div className="flex items-center text-sm text-gray-500 space-x-4">
+                      <span className="flex items-center">
+                        <Clock className="w-4 h-4 mr-1" />
+                        {course.estimatedHours}h
+                      </span>
+                      <span className="flex items-center">
+                        <BookOpen className="w-4 h-4 mr-1" />
+                        {course.totalTopics} topics
+                      </span>
+                      <span className="flex items-center">
+                        <FileText className="w-4 h-4 mr-1" />
+                        {course.totalMaterials || 0} materials
+                      </span>
+                      <span className="flex items-center">
+                        <Target className="w-4 h-4 mr-1" />
+                        {course.totalTests} tests
+                      </span>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="text-sm text-slate-500">
-                      Created by {course.creator.name}
+                    <div className="flex items-center text-sm text-gray-500">
+                      <Calendar className="w-4 h-4 mr-1" />
+                      <span>{course.duration}</span>
                     </div>
-                    
-                    {!isEnrolled(course.id) ? (
-                      <button
-                        onClick={() => {
-                          setSelectedCourse(course);
-                          setShowEnrollmentModal(true);
-                        }}
-                        disabled={course.enrollments.length >= course.maxStudents}
-                        className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                    <div className="flex items-center text-sm text-gray-500">
+                      <Users className="w-4 h-4 mr-1" />
+                      <span>{course.enrolledStudents} enrolled</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <button 
+                        onClick={() => handleViewCourse(course.id)}
+                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                       >
-                        {course.enrollments.length >= course.maxStudents ? 'Full' : 'Enroll Now'}
-                      </button>
-                    ) : (
-                      <button className="btn-secondary">
-                        <MessageCircle className="w-4 h-4 mr-2" />
+                        <Eye className="w-4 h-4 mr-2" />
                         View Course
                       </button>
-                    )}
+                      <div className="flex items-center space-x-2">
+                        <button 
+                          onClick={(e) => handleToggleFavorite(course.id, e)}
+                          className={`p-2 transition-colors ${
+                            favorites.has(course.id) 
+                              ? 'text-red-500' 
+                              : 'text-gray-400 hover:text-red-500'
+                          }`}
+                        >
+                          <Heart className={`w-5 h-5 ${favorites.has(course.id) ? 'fill-current' : ''}`} />
+                        </button>
+                        <button 
+                          onClick={(e) => handleToggleBookmark(course.id, e)}
+                          className={`p-2 transition-colors ${
+                            bookmarks.has(course.id) 
+                              ? 'text-blue-500' 
+                              : 'text-gray-400 hover:text-blue-500'
+                          }`}
+                        >
+                          <Bookmark className={`w-5 h-5 ${bookmarks.has(course.id) ? 'fill-current' : ''}`} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Enrollment Modal */}
-      {showEnrollmentModal && selectedCourse && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">
-              Enroll in {selectedCourse.title}
-            </h3>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Select a Tutor
-              </label>
-              <select
-                value={selectedTutor?.id || ''}
-                onChange={(e) => {
-                  const tutor = tutors.find(t => t.id === e.target.value);
-                  setSelectedTutor(tutor || null);
-                }}
-                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
-              >
-                <option value="">Choose a tutor...</option>
-                {getAvailableTutors(selectedCourse).map((tutor) => (
-                  <option key={tutor.id} value={tutor.id}>
-                    {tutor.name} - {tutor.tutorEnrollments.filter((e: any) => e.courseId === selectedCourse.id).length}/30 students
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {selectedTutor && (
-              <div className="mb-4 p-3 bg-slate-50 rounded-lg">
-                <h4 className="font-medium text-slate-900 mb-2">{selectedTutor.name}</h4>
-                {selectedTutor.profile?.bio && (
-                  <p className="text-sm text-slate-600 mb-2">{selectedTutor.profile.bio}</p>
-                )}
-                {selectedTutor.profile?.experience && (
-                  <p className="text-sm text-slate-500">Experience: {selectedTutor.profile.experience}</p>
-                )}
+      {/* Call to Action */}
+      <div className="bg-gray-900 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold mb-4">Ready to start learning?</h2>
+            <p className="text-xl text-gray-300 mb-8">
+              Join thousands of students who are already advancing their skills
+            </p>
+            {!session ? (
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button
+                  onClick={() => router.push('/auth/signup')}
+                  className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Get Started Free
+                </button>
+                <button
+                  onClick={() => router.push('/auth/signin')}
+                  className="px-8 py-3 border border-white text-white rounded-lg hover:bg-white hover:text-gray-900 transition-colors"
+                >
+                  Sign In
+                </button>
               </div>
+            ) : (
+              <button
+                onClick={() => router.push('/my-courses')}
+                className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                View My Courses
+              </button>
             )}
-
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setShowEnrollmentModal(false)}
-                className="flex-1 px-4 py-2 border border-slate-300 rounded-md text-slate-700 hover:bg-slate-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleEnroll}
-                disabled={!selectedTutor || enrolling}
-                className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {enrolling ? 'Enrolling...' : 'Confirm Enrollment'}
-              </button>
-            </div>
           </div>
         </div>
-      )}
-
-      <Footer />
-    </main>
+      </div>
+    </div>
   );
 }
-

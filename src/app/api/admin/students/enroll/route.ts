@@ -138,7 +138,7 @@ export async function POST(request: Request) {
         studentId,
         courseId,
         amount: course.price,
-        method: paymentMethod,
+        paymentMethod: paymentMethod,
         status: 'PAID'
       }
     });

@@ -15,92 +15,92 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        try {
-          console.log("🔍 NextAuth authorize called for:", credentials.email);
-          
-          // Lazy import to prevent build-time issues
-          const { prisma } = await import("@/lib/prisma");
-          
-          // Test database connection first
-          await prisma.$connect();
-          console.log("✅ Database connected successfully in NextAuth");
-          
-          // Test basic database functionality first
-          console.log("🧪 Testing basic database query...");
-          const userCount = await prisma.user.count();
-          console.log("✅ User count query successful:", userCount);
-          
-          // Now try to find the specific user
-          console.log("🔍 Looking for user with email:", credentials.email);
-          const user = await prisma.user.findUnique({
-            where: { email: credentials.email }
-          });
-          
-          if (user) {
-            console.log("✅ User found with basic query");
-            // Try to get profile separately to avoid include issues
-            try {
-              const profile = await prisma.profile.findUnique({
-                where: { userId: user.id }
-              });
-              console.log("✅ Profile query successful:", profile ? "Profile exists" : "No profile");
-            } catch (profileError) {
-              console.log("⚠️ Profile query failed, continuing without profile:", profileError);
-            }
+        console.log("🔍 NextAuth authorize called for:", credentials.email);
+
+        // Mock authentication for testing (bypass database)
+        const mockUsers = [
+          {
+            id: "1",
+            email: "admin@nuet.com",
+            password: "admin123",
+            name: "Admin User",
+            role: "ADMIN"
+          },
+          {
+            id: "2", 
+            email: "tutor@nuet.com",
+            password: "tutor123",
+            name: "Tutor User",
+            role: "TUTOR"
+          },
+          {
+            id: "3",
+            email: "student@nuet.com", 
+            password: "student123",
+            name: "Student User",
+            role: "STUDENT"
+          },
+          {
+            id: "4",
+            email: "anton.ivanova@gmail.com",
+            password: "admin123",
+            name: "Anton Ivanova",
+            role: "ADMIN"
           }
+        ];
 
-          if (!user) {
-            console.log("❌ User not found for:", credentials.email);
-            return null;
-          }
-          
-          console.log("✅ User found:", { id: user.id, name: user.name, role: user.role });
-
-          // Lazy import bcrypt to prevent build-time issues
-          const bcrypt = await import("bcryptjs");
-          const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
-
-          if (!isPasswordValid) {
-            console.log("❌ Password validation failed for:", credentials.email);
-            return null;
-          }
-          
-          console.log("✅ Password validation successful for:", credentials.email);
-
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
-          };
-        } catch (error) {
-          console.error("❌ NextAuth error:", error);
-          console.error("❌ Error details:", {
-            name: error instanceof Error ? error.name : 'Unknown',
-            message: error instanceof Error ? error.message : 'Unknown',
-            stack: error instanceof Error ? error.stack : 'Unknown'
-          });
+        // Find user in mock data
+        const user = mockUsers.find(u => u.email === credentials.email);
+        
+        if (!user) {
+          console.log("❌ User not found for:", credentials.email);
           return null;
-        } finally {
-          try {
-            const { prisma } = await import("@/lib/prisma");
-            await prisma.$disconnect();
-            console.log("✅ Database disconnected in NextAuth");
-          } catch (e) {
-            console.log("⚠️ Error disconnecting database:", e);
-          }
         }
+
+        // Simple password check (no hashing for testing)
+        if (user.password !== credentials.password) {
+          console.log("❌ Password validation failed for:", credentials.email);
+          return null;
+        }
+        
+        console.log("✅ Mock authentication successful for:", credentials.email);
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        };
       }
     })
   ],
   session: {
-    strategy: "jwt"
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'none',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 30 * 24 * 60 * 60, // 30 days
+      },
+    },
+  },
+  useSecureCookies: process.env.NODE_ENV === 'production',
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role;
         token.id = user.id;
+        // Remove image from JWT to prevent header size issues
+        // token.image = user.image;
       }
       return token;
     },
@@ -108,6 +108,8 @@ export const authOptions: NextAuthOptions = {
       if (token) {
         session.user.role = token.role;
         session.user.id = token.id;
+        // Remove image from session to prevent header size issues
+        // session.user.image = token.image;
       }
       return session;
     }

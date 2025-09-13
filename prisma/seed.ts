@@ -50,6 +50,10 @@ async function main() {
       duration: '6 months',
       status: 'ACTIVE',
       maxStudents: 30,
+      instructor: 'Dr. Sarah Johnson',
+      difficulty: 'ADVANCED',
+      estimatedHours: 120,
+      isActive: true,
       creatorId: adminUser.id,
     },
   });
@@ -65,6 +69,10 @@ async function main() {
       duration: '2 months',
       status: 'ACTIVE',
       maxStudents: 25,
+      instructor: 'Prof. Michael Chen',
+      difficulty: 'INTERMEDIATE',
+      estimatedHours: 80,
+      isActive: true,
       creatorId: adminUser.id,
     },
   });
@@ -80,6 +88,10 @@ async function main() {
       duration: 'Monthly',
       status: 'ACTIVE',
       maxStudents: 1,
+      instructor: 'Dr. Emily Rodriguez',
+      difficulty: 'BEGINNER',
+      estimatedHours: 30,
+      isActive: true,
       creatorId: adminUser.id,
     },
   });

@@ -1,12 +1,50 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
-export async function POST(request: Request) {
+export async function GET() {
   try {
-    // Check if user is authenticated and is admin
     const session = await getServerSession(authOptions);
-    
+
+    if (!session || session.user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Unauthorized - Admin access required' },
+        { status: 401 }
+      );
+    }
+
+    const topics = await prisma.topic.findMany({
+      include: {
+        course: true
+      },
+      orderBy: [
+        { courseId: 'asc' },
+        { order: 'asc' }
+      ]
+    });
+
+    return NextResponse.json({
+      success: true,
+      topics
+    });
+
+  } catch (error: any) {
+    console.error('Error fetching topics:', error);
+    return NextResponse.json(
+      { 
+        error: 'Failed to fetch topics',
+        details: error.message || 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
     if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
@@ -15,23 +53,18 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { title, description, order, courseId } = body;
+    const { courseId, title, description, order } = body;
 
-    // Validate required fields
-    if (!title || !courseId || order === undefined) {
+    if (!courseId || !title || !description || order === undefined) {
       return NextResponse.json(
-        { error: 'Missing required fields: title, courseId, order' },
+        { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    // Lazy import to prevent build-time issues
-    const { prisma } = await import('@/lib/prisma');
-    
-    // Verify the course exists and user has permission
+    // Verify course exists
     const course = await prisma.course.findUnique({
-      where: { id: courseId },
-      select: { id: true, creatorId: true }
+      where: { id: courseId }
     });
 
     if (!course) {
@@ -41,44 +74,27 @@ export async function POST(request: Request) {
       );
     }
 
-    if (course.creatorId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'You can only add topics to courses you created' },
-        { status: 403 }
-      );
-    }
-
-    // Create the topic
     const topic = await prisma.topic.create({
       data: {
+        courseId,
         title,
-        description: description || '',
-        order,
-        courseId
+        description,
+        order: parseInt(order)
       },
       include: {
-        course: {
-          select: {
-            id: true,
-            title: true
-          }
-        }
+        course: true
       }
     });
 
     return NextResponse.json({
       success: true,
-      topic,
-      message: 'Topic created successfully'
+      topic
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating topic:', error);
     return NextResponse.json(
-      { 
-        error: 'Failed to create topic',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { error: 'Failed to create topic' },
       { status: 500 }
     );
   }

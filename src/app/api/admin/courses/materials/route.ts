@@ -1,12 +1,59 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
-export async function POST(request: Request) {
+export async function GET() {
   try {
-    // Check if user is authenticated and is admin
     const session = await getServerSession(authOptions);
-    
+
+    if (!session || session.user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Unauthorized - Admin access required' },
+        { status: 401 }
+      );
+    }
+
+    const materials = await prisma.material.findMany({
+      include: {
+        topic: {
+          include: {
+            course: true
+          }
+        },
+        subtopic: {
+          include: {
+            topic: {
+              include: {
+                course: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    return NextResponse.json({
+      success: true,
+      materials
+    });
+
+  } catch (error: any) {
+    console.error('Error fetching materials:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch materials' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
     if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
@@ -15,80 +62,54 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { title, description, type, url, content, order, topicId } = body;
+    const { topicId, subtopicId, title, type, url, description, order } = body;
 
-    // Validate required fields
-    if (!title || !type || !topicId || order === undefined) {
+    if ((!topicId && !subtopicId) || !title || !type) {
       return NextResponse.json(
-        { error: 'Missing required fields: title, type, topicId, order' },
+        { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    // Validate material type specific fields
-    if (type !== 'TEXT' && !url) {
-      return NextResponse.json(
-        { error: 'URL is required for non-text materials' },
-        { status: 400 }
-      );
-    }
-
-    if (type === 'TEXT' && !content) {
-      return NextResponse.json(
-        { error: 'Content is required for text materials' },
-        { status: 400 }
-      );
-    }
-
-    // Lazy import to prevent build-time issues
-    const { prisma } = await import('@/lib/prisma');
-    
-    // Verify the topic exists and user has permission to the course
-    const topic = await prisma.topic.findUnique({
-      where: { id: topicId },
-      include: {
-        course: {
-          select: { id: true, creatorId: true }
-        }
+    // Verify the parent exists
+    if (topicId) {
+      const topic = await prisma.topic.findUnique({
+        where: { id: topicId }
+      });
+      if (!topic) {
+        return NextResponse.json(
+          { error: 'Topic not found' },
+          { status: 404 }
+        );
       }
-    });
-
-    if (!topic) {
-      return NextResponse.json(
-        { error: 'Topic not found' },
-        { status: 404 }
-      );
     }
 
-    if (topic.course.creatorId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'You can only add materials to topics in courses you created' },
-        { status: 403 }
-      );
+    if (subtopicId) {
+      const subtopic = await prisma.subtopic.findUnique({
+        where: { id: subtopicId }
+      });
+      if (!subtopic) {
+        return NextResponse.json(
+          { error: 'Subtopic not found' },
+          { status: 404 }
+        );
+      }
     }
 
-    // Create the material
     const material = await prisma.material.create({
       data: {
+        topicId: topicId || null,
+        subtopicId: subtopicId || null,
         title,
         description: description || '',
-        type,
-        url: type !== 'TEXT' ? url : null,
-        content: type === 'TEXT' ? content : null,
-        order,
-        topicId
+        type: type as any,
+        url: url || '',
+        order: parseInt(order) || 0
       },
       include: {
         topic: {
-          select: {
-            id: true,
-            title: true,
-            course: {
-              select: {
-                id: true,
-                title: true
-              }
-            }
+          include: {
+            course: true
           }
         }
       }
@@ -96,17 +117,13 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      material,
-      message: 'Material created successfully'
+      material
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating material:', error);
     return NextResponse.json(
-      { 
-        error: 'Failed to create material',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { error: 'Failed to create material' },
       { status: 500 }
     );
   }

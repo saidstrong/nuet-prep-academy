@@ -19,12 +19,23 @@ export async function GET() {
     // Fetch courses where the current user is assigned as a tutor
     const courses = await prisma.course.findMany({
       where: {
-        enrollments: {
-          some: {
-            tutorId: session.user.id,
-            status: 'ACTIVE'
+        OR: [
+          {
+            assignedTutors: {
+              some: {
+                id: session.user.id
+              }
+            }
+          },
+          {
+            enrollments: {
+              some: {
+                tutorId: session.user.id,
+                status: 'ACTIVE'
+              }
+            }
           }
-        },
+        ],
         status: 'ACTIVE'
       },
       include: {

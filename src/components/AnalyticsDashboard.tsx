@@ -25,7 +25,8 @@ import {
   Award,
   Clock,
   Target,
-  Activity
+  Activity,
+  BarChart3
 } from 'lucide-react';
 
 interface AnalyticsData {
@@ -73,7 +74,17 @@ export default function AnalyticsDashboard() {
   }
 
   if (!analyticsData) {
-    return <div>No analytics data available</div>;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="text-slate-400 mb-2">
+            <BarChart3 className="w-12 h-12 mx-auto" />
+          </div>
+          <p className="text-slate-600">No analytics data available</p>
+          <p className="text-sm text-slate-500">Try refreshing the page or selecting a different time range</p>
+        </div>
+      </div>
+    );
   }
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];

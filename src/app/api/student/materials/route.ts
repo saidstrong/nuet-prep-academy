@@ -1,23 +1,28 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    // Check if user is authenticated and is a student
     const session = await getServerSession(authOptions);
 
-    if (!session || session.user.role !== 'STUDENT') {
+    if (!session) {
       return NextResponse.json(
-        { error: 'Unauthorized - Student access required' },
+        { error: 'Unauthorized - Please sign in' },
         { status: 401 }
       );
     }
 
-    const { prisma } = await import('@/lib/prisma');
+    if (session.user.role !== 'STUDENT') {
+      return NextResponse.json(
+        { error: 'Forbidden - Student access required' },
+        { status: 403 }
+      );
+    }
 
-    // Fetch materials from courses where the student is enrolled
-    const enrollments = await prisma.courseEnrollment.findMany({
+    // Get student's enrolled courses
+    const enrolledCourses = await prisma.courseEnrollment.findMany({
       where: {
         studentId: session.user.id,
         status: 'ACTIVE'
@@ -28,8 +33,16 @@ export async function GET() {
             topics: {
               include: {
                 materials: {
-                  orderBy: { order: 'asc' }
+                  where: {
+                    isPublished: true
+                  },
+                  orderBy: {
+                    order: 'asc'
+                  }
                 }
+              },
+              orderBy: {
+                order: 'asc'
               }
             }
           }
@@ -37,48 +50,52 @@ export async function GET() {
       }
     });
 
-    // Transform the data to include material information
-    const materials: any[] = [];
+    // Flatten materials from all enrolled courses
+    const materials = [];
     
-    enrollments.forEach(enrollment => {
-      const course = enrollment.course;
-      
-      course.topics.forEach(topic => {
-        topic.materials.forEach(material => {
-          // For now, we'll use placeholder completion status
-          // In a real implementation, this would track actual student progress
-          const isCompleted = Math.random() > 0.5; // Placeholder
-          const lastAccessed = new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000); // Placeholder
+    for (const enrollment of enrolledCourses) {
+      for (const topic of enrollment.course.topics) {
+        for (const material of topic.materials) {
+          // Get material progress if exists (simplified for now)
+          const progress = null; // MaterialProgress model might not exist yet
 
           materials.push({
             id: material.id,
             title: material.title,
+            description: material.description,
             type: material.type,
-            courseTitle: course.title,
+            url: material.url,
+            content: material.content,
+            fileName: material.fileName,
+            fileSize: material.fileSize,
+            mimeType: material.mimeType,
+            order: material.order,
+            isPublished: material.isPublished,
+            createdAt: material.createdAt,
+            updatedAt: material.updatedAt,
+            courseTitle: enrollment.course.title,
             topicTitle: topic.title,
-            lastAccessed: lastAccessed.toISOString(),
-            isCompleted
+            lastAccessed: material.createdAt,
+            isCompleted: false, // Default to false for now
+            estimatedTime: 30, // Default estimated time
+            priority: 'MEDIUM' // Default priority
           });
-        });
-      });
-    });
+        }
+      }
+    }
 
-    // Sort by last accessed date (most recent first)
+    // Sort by last accessed (most recent first)
     materials.sort((a, b) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime());
 
     return NextResponse.json({
       success: true,
-      materials,
-      total: materials.length
+      materials: materials
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching student materials:', error);
     return NextResponse.json(
-      {
-        error: 'Failed to fetch student materials',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { error: 'Failed to fetch materials' },
       { status: 500 }
     );
   }

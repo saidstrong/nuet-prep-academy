@@ -41,7 +41,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (status === 'loading') return;
     
-    if (!session || session.user.role !== 'OWNER') {
+    if (!session || !['ADMIN', 'OWNER'].includes(session.user.role)) {
       router.push('/auth/signin');
       return;
     }
@@ -52,15 +52,21 @@ export default function AdminDashboard() {
   const fetchDashboardData = async () => {
     try {
       // Fetch courses
-      const coursesResponse = await fetch('/api/admin/courses');
+      const coursesResponse = await fetch('/api/admin/courses', {
+        credentials: 'include'
+      });
       const coursesData = await coursesResponse.json();
       
       // Fetch tutors
-      const tutorsResponse = await fetch('/api/admin/tutors');
+      const tutorsResponse = await fetch('/api/admin/tutors', {
+        credentials: 'include'
+      });
       const tutorsData = await tutorsResponse.json();
       
       // Fetch students
-      const studentsResponse = await fetch('/api/admin/students');
+      const studentsResponse = await fetch('/api/admin/students', {
+        credentials: 'include'
+      });
       const studentsData = await studentsResponse.json();
 
       if (coursesData.success) setCourses(coursesData.courses);
@@ -85,13 +91,13 @@ export default function AdminDashboard() {
     );
   }
 
-  if (!session || session.user.role !== 'OWNER') {
+  if (!session || !['ADMIN', 'OWNER'].includes(session.user.role)) {
     return null;
   }
 
   const totalRevenue = courses.reduce((sum, course) => {
     const paidEnrollments = course.enrollments?.filter((e: any) => e.paymentStatus === 'COMPLETED') || [];
-    return sum + (paidEnrollments.length * course.price);
+    return sum + (paidEnrollments.length * (course.price || 0));
   }, 0);
 
   const totalStudents = students.length;

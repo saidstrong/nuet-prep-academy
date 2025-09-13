@@ -1,6 +1,6 @@
 "use client";
-import { useState } from 'react';
-import { X, Plus, FileText, Link, Video, Headphones, File, List } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { X, Upload, FileText, Video, Link, File, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface MaterialCreationModalProps {
   isOpen: boolean;
@@ -13,47 +13,116 @@ interface MaterialFormData {
   title: string;
   description: string;
   type: 'PDF' | 'VIDEO' | 'AUDIO' | 'LINK' | 'TEXT';
-  url: string;
   content: string;
   order: number;
+  isPublished: boolean;
 }
 
-export default function MaterialCreationModal({ isOpen, onClose, topicId, onMaterialCreated }: MaterialCreationModalProps) {
+export default function MaterialCreationModal({
+  isOpen,
+  onClose,
+  topicId,
+  onMaterialCreated
+}: MaterialCreationModalProps) {
   const [formData, setFormData] = useState<MaterialFormData>({
     title: '',
     description: '',
     type: 'PDF',
-    url: '',
     content: '',
-    order: 1
+    order: 1,
+    isPublished: false
   });
-  
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'order' ? Number(value) : value
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file size (max 50MB)
+      if (file.size > 50 * 1024 * 1024) {
+        setError('File size must be less than 50MB');
+        return;
+      }
+      
+      // Validate file type based on selected material type
+      const validTypes: Record<string, string[]> = {
+        PDF: ['application/pdf'],
+        VIDEO: ['video/mp4', 'video/avi', 'video/mov', 'video/wmv'],
+        AUDIO: ['audio/mp3', 'audio/wav', 'audio/m4a', 'audio/aac'],
+        LINK: [],
+        TEXT: []
+      };
+
+      if (validTypes[formData.type].length > 0 && !validTypes[formData.type].includes(file.type)) {
+        setError(`Invalid file type for ${formData.type}. Please select a valid file.`);
+        return;
+      }
+
+      setUploadedFile(file);
+      setFormData(prev => ({
+        ...prev,
+        title: file.name.replace(/\.[^/.]+$/, '') || prev.title,
+        fileName: file.name
+      }));
+      setError('');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setIsLoading(true);
     setError('');
+    setSuccess('');
 
     try {
-      const response = await fetch('/api/admin/courses/materials', {
+      // First, upload file if present
+      let fileUrl = '';
+      if (uploadedFile && formData.type !== 'LINK' && formData.type !== 'TEXT') {
+        const formDataFile = new FormData();
+        formDataFile.append('file', uploadedFile);
+        formDataFile.append('type', formData.type);
+        
+        const uploadResponse = await fetch('/api/materials/upload', {
+          method: 'POST',
+          body: formDataFile
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload file');
+        }
+
+        const uploadResult = await uploadResponse.json();
+        fileUrl = uploadResult.url;
+      }
+
+      // Create material record
+      const materialData = {
+        ...formData,
+        topicId,
+        url: fileUrl || formData.content,
+        fileSize: uploadedFile?.size || null,
+        fileName: uploadedFile?.name || null,
+        mimeType: uploadedFile?.type || null
+      };
+
+      const response = await fetch('/api/materials', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          topicId
-        }),
+        body: JSON.stringify(materialData),
       });
 
       if (!response.ok) {
@@ -61,40 +130,54 @@ export default function MaterialCreationModal({ isOpen, onClose, topicId, onMate
         throw new Error(errorData.error || 'Failed to create material');
       }
 
-      // Reset form and close modal
+      setSuccess('Material created successfully!');
       setFormData({
         title: '',
         description: '',
         type: 'PDF',
-        url: '',
         content: '',
-        order: 1
+        order: 1,
+        isPublished: false
       });
+      setUploadedFile(null);
+      setUploadProgress(0);
       
-      onMaterialCreated();
-      onClose();
-      
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'An error occurred');
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+
+      setTimeout(() => {
+        onMaterialCreated();
+        onClose();
+      }, 1500);
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const getMaterialIcon = (type: string) => {
+  const getMaterialTypeIcon = (type: string) => {
     switch (type) {
-      case 'PDF':
-        return <File className="w-5 h-5" />;
-      case 'VIDEO':
-        return <Video className="w-5 h-5" />;
-      case 'AUDIO':
-        return <Headphones className="w-5 h-5" />;
-      case 'LINK':
-        return <Link className="w-5 h-5" />;
-      case 'TEXT':
-        return <FileText className="w-5 h-5" />;
-      default:
-        return <FileText className="w-5 h-5" />;
+      case 'PDF': return <FileText className="w-5 h-5" />;
+      case 'VIDEO': return <Video className="w-5 h-5" />;
+      case 'AUDIO': return <File className="w-5 h-5" />;
+      case 'LINK': return <Link className="w-5 h-5" />;
+      case 'TEXT': return <FileText className="w-5 h-5" />;
+      default: return <File className="w-5 h-5" />;
+    }
+  };
+
+  const getMaterialTypeDescription = (type: string) => {
+    switch (type) {
+      case 'PDF': return 'Upload a PDF document';
+      case 'VIDEO': return 'Upload a video file (MP4, AVI, MOV, WMV)';
+      case 'AUDIO': return 'Upload an audio file (MP3, WAV, M4A, AAC)';
+      case 'LINK': return 'Provide a link to external content';
+      case 'TEXT': return 'Write or paste text content';
+      default: return '';
     }
   };
 
@@ -102,181 +185,213 @@ export default function MaterialCreationModal({ isOpen, onClose, topicId, onMate
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Add New Material</h2>
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Create New Material</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600"
           >
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
-              {error}
-            </div>
-          )}
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded flex items-center">
+            <AlertCircle className="w-5 h-5 mr-2" />
+            {error}
+          </div>
+        )}
 
-          {/* Material Title */}
+        {success && (
+          <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded flex items-center">
+            <CheckCircle className="w-5 h-5 mr-2" />
+            {success}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Material Type Selection */}
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-              Material Title *
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Material Type
             </label>
-            <div className="relative">
-              <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                required
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter material title"
-              />
+            <div className="grid grid-cols-5 gap-3">
+              {(['PDF', 'VIDEO', 'AUDIO', 'LINK', 'TEXT'] as const).map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, type }))}
+                  className={`p-3 border-2 rounded-lg flex flex-col items-center justify-center transition-colors ${
+                    formData.type === type
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  {getMaterialTypeIcon(type)}
+                  <span className="text-xs mt-1 font-medium">{type}</span>
+                </button>
+              ))}
             </div>
+            <p className="text-sm text-gray-500 mt-2">
+              {getMaterialTypeDescription(formData.type)}
+            </p>
           </div>
 
-          {/* Material Type and Order Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Material Type */}
-            <div>
-              <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-2">
-                Material Type *
-              </label>
-              <select
-                id="type"
-                name="type"
-                value={formData.type}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="PDF">PDF Document</option>
-                <option value="VIDEO">Video</option>
-                <option value="AUDIO">Audio</option>
-                <option value="LINK">External Link</option>
-                <option value="TEXT">Text Content</option>
-              </select>
-            </div>
-
-            {/* Material Order */}
-            <div>
-              <label htmlFor="order" className="block text-sm font-medium text-gray-700 mb-2">
-                Material Order *
-              </label>
-              <div className="relative">
-                <List className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="number"
-                  id="order"
-                  name="order"
-                  value={formData.order}
-                  onChange={handleInputChange}
-                  required
-                  min="1"
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="1"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Material Description */}
+          {/* Title */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-              Material Description
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Title *
+            </label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleInputChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter material title"
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description
             </label>
             <textarea
-              id="description"
               name="description"
               value={formData.description}
               onChange={handleInputChange}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Describe this material"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter material description"
             />
           </div>
 
-          {/* URL Field (for PDF, Video, Audio, Link) */}
-          {formData.type !== 'TEXT' && (
+          {/* File Upload or Content Input */}
+          {(formData.type === 'PDF' || formData.type === 'VIDEO' || formData.type === 'AUDIO') && (
             <div>
-              <label htmlFor="url" className="block text-sm font-medium text-gray-700 mb-2">
-                {formData.type === 'PDF' && 'PDF File URL'}
-                {formData.type === 'VIDEO' && 'Video URL'}
-                {formData.type === 'AUDIO' && 'Audio URL'}
-                {formData.type === 'LINK' && 'External Link URL'}
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Upload File *
               </label>
-              <div className="relative">
-                {getMaterialIcon(formData.type)}
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
                 <input
-                  type="url"
-                  id="url"
-                  name="url"
-                  value={formData.url}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder={
-                    formData.type === 'PDF' ? 'https://example.com/document.pdf' :
-                    formData.type === 'VIDEO' ? 'https://youtube.com/watch?v=...' :
-                    formData.type === 'AUDIO' ? 'https://example.com/audio.mp3' :
-                    'https://example.com'
+                  ref={fileInputRef}
+                  type="file"
+                  onChange={handleFileChange}
+                  accept={
+                    formData.type === 'PDF' ? '.pdf' :
+                    formData.type === 'VIDEO' ? '.mp4,.avi,.mov,.wmv' :
+                    '.mp3,.wav,.m4a,.aac'
                   }
+                  className="hidden"
                 />
+                <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                  >
+                    Choose File
+                  </button>
+                </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  Max file size: 50MB
+                </p>
+                {uploadedFile && (
+                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
+                    <p className="text-sm text-green-700">
+                      <strong>Selected:</strong> {uploadedFile.name}
+                    </p>
+                    <p className="text-xs text-green-600">
+                      Size: {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* Content Field (for TEXT type) */}
+          {formData.type === 'LINK' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                URL *
+              </label>
+              <input
+                type="url"
+                name="content"
+                value={formData.content}
+                onChange={handleInputChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="https://example.com"
+              />
+            </div>
+          )}
+
           {formData.type === 'TEXT' && (
             <div>
-              <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
-                Text Content *
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Content *
               </label>
               <textarea
-                id="content"
                 name="content"
                 value={formData.content}
                 onChange={handleInputChange}
                 required
                 rows={6}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter the text content for this material..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter your text content here..."
               />
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+          {/* Order */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Display Order
+            </label>
+            <input
+              type="number"
+              name="order"
+              value={formData.order}
+              onChange={handleInputChange}
+              min="1"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Published Status */}
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              name="isPublished"
+              checked={formData.isPublished}
+              onChange={handleInputChange}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label className="ml-2 block text-sm text-gray-900">
+              Publish immediately (make visible to students)
+            </label>
+          </div>
+
+          {/* Submit Button */}
+          <div className="flex justify-end space-x-3 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+              disabled={isLoading || (formData.type !== 'LINK' && formData.type !== 'TEXT' && !uploadedFile)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Creating...</span>
-                </>
-              ) : (
-                <>
-                  <Plus className="w-4 h-4" />
-                  <span>Create Material</span>
-                </>
-              )}
+              {isLoading ? 'Creating...' : 'Create Material'}
             </button>
           </div>
         </form>

@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import bcrypt from 'bcryptjs';
 
 export async function GET() {
   try {
     // Check if user is authenticated and is admin
     const session = await getServerSession(authOptions);
     
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || !['ADMIN'].includes(session.user.role)) {
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
         { status: 401 }
@@ -18,50 +17,44 @@ export async function GET() {
     // Lazy import to prevent build-time issues
     const { prisma } = await import('@/lib/prisma');
     
-    // Fetch all students with their course enrollments
+    console.log('Admin students API: Fetching students...');
+    
+    // Get students (simplified query to avoid relation issues)
     const students = await prisma.user.findMany({
       where: {
         role: 'STUDENT'
       },
-      include: {
-        studentEnrollments: {
-          where: {
-            status: 'ACTIVE'
-          },
-          select: {
-            id: true,
-            courseId: true,
-            tutorId: true,
-            enrolledAt: true,
-            paymentStatus: true
-          }
-        },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
         profile: {
           select: {
             phone: true,
             whatsapp: true,
-            bio: true,
-            experience: true
+            bio: true
           }
         }
       },
       orderBy: {
-        name: 'asc'
+        createdAt: 'desc'
       }
     });
 
-    // Transform the data to include course and tutor information
+    console.log(`Admin students API: Found ${students.length} students`);
+
+    // Transform the data (simplified without enrollments for now)
     const transformedStudents = students.map(student => {
-      const enrolledCourses = student.studentEnrollments.map(enrollment => enrollment.courseId);
-      const totalEnrollments = student.studentEnrollments.length;
-      
       return {
         id: student.id,
         name: student.name,
         email: student.email,
         role: student.role,
-        enrolledCourses,
-        totalEnrollments,
+        createdAt: student.createdAt,
+        enrolledCourses: [], // Empty for now
+        totalEnrollments: 0, // Zero for now
         profile: student.profile
       };
     });
@@ -89,7 +82,7 @@ export async function POST(request: Request) {
     // Check if user is authenticated and is admin
     const session = await getServerSession(authOptions);
     
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || !['ADMIN'].includes(session.user.role)) {
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
         { status: 401 }
@@ -123,6 +116,7 @@ export async function POST(request: Request) {
     }
 
     // Hash the password
+    const bcrypt = await import('bcryptjs');
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Create the student user

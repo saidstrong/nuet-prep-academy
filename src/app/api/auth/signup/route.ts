@@ -1,37 +1,35 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { z } from 'zod';
-
-// Validation schema for signup
-// Updated: Added comprehensive validation and security features
-const signupSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string()
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+import { prisma } from '@/lib/prisma';
+import { signupSchema, validateInput, formatValidationErrors } from '@/lib/validation';
+import { addSecurityHeaders, rateLimit, getClientIP, logSecurityEvent } from '@/lib/security';
 
 export async function POST(request: Request) {
+  const clientIP = getClientIP(request as any);
+  
+  // Rate limiting
+  if (!rateLimit(clientIP, 5, 60000)) { // 5 attempts per minute
+    logSecurityEvent('Rate limit exceeded', { ip: clientIP }, request as any);
+    return addSecurityHeaders(NextResponse.json({
+      success: false,
+      message: 'Too many requests. Please try again later.'
+    }, { status: 429 }));
+  }
+
   try {
     const body = await request.json();
     
     // Validate input
-    const validationResult = signupSchema.safeParse(body);
-    if (!validationResult.success) {
-      return NextResponse.json({
+    const validation = validateInput(signupSchema, body);
+    if (!validation.success) {
+      return addSecurityHeaders(NextResponse.json({
         success: false,
         message: 'Validation failed',
-        errors: validationResult.error.errors
-      }, { status: 400 });
+        errors: formatValidationErrors(validation.errors)
+      }, { status: 400 }));
     }
 
-    const { name, email, password } = validationResult.data;
-
-    // Lazy import to prevent build-time issues
-    const { prisma } = await import('@/lib/prisma');
+    const { name, email, password } = validation.data;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -39,16 +37,17 @@ export async function POST(request: Request) {
     });
 
     if (existingUser) {
-      return NextResponse.json({
+      logSecurityEvent('Signup attempt with existing email', { email, ip: clientIP }, request as any);
+      return addSecurityHeaders(NextResponse.json({
         success: false,
         message: 'User with this email already exists'
-      }, { status: 400 });
+      }, { status: 400 }));
     }
 
-    // Hash password
+    // Hash password with higher salt rounds for better security
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create user
+    // Create user with profile
     const user = await prisma.user.create({
       data: {
         name,
@@ -59,6 +58,9 @@ export async function POST(request: Request) {
           create: {
             bio: '',
             phone: '',
+            whatsapp: '',
+            experience: '',
+            specialization: '',
             avatar: ''
           }
         }
@@ -71,17 +73,21 @@ export async function POST(request: Request) {
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
 
-    return NextResponse.json({
+    logSecurityEvent('User created successfully', { userId: user.id, email }, request as any);
+
+    return addSecurityHeaders(NextResponse.json({
       success: true,
       message: 'User created successfully',
       user: userWithoutPassword
-    }, { status: 201 });
+    }, { status: 201 }));
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Signup error:', error);
-    return NextResponse.json({
+    logSecurityEvent('Signup error', { error: error.message, ip: clientIP }, request as any);
+    
+    return addSecurityHeaders(NextResponse.json({
       success: false,
       message: 'An error occurred during signup'
-    }, { status: 500 });
+    }, { status: 500 }));
   }
 }

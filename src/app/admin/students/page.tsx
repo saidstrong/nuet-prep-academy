@@ -95,6 +95,28 @@ export default function StudentManagementPage() {
     setIsEnrollmentModalOpen(true);
   };
 
+  const handleDeleteStudent = async (studentId: string, studentName: string) => {
+    if (!confirm(`Are you sure you want to delete ${studentName}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/students/${studentId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        fetchStudents(); // Refresh the list
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to delete student: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error('Error deleting student:', error);
+      alert('Failed to delete student. Please try again.');
+    }
+  };
+
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -258,7 +280,10 @@ export default function StudentManagementPage() {
                         <BookOpen className="w-4 h-4" />
                         <span>Enroll</span>
                       </button>
-                      <button className="text-red-600 hover:text-red-900 flex items-center space-x-1">
+                      <button 
+                        onClick={() => handleDeleteStudent(student.id, student.name)}
+                        className="text-red-600 hover:text-red-900 flex items-center space-x-1"
+                      >
                         <Trash2 className="w-4 h-4" />
                         <span>Remove</span>
                       </button>

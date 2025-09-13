@@ -72,19 +72,19 @@ export async function GET(
         description: submission.test.description,
         duration: submission.test.duration,
         totalPoints: submission.test.totalPoints,
-        topic: {
+        topic: submission.test.topic ? {
           title: submission.test.topic.title,
           course: {
             title: submission.test.topic.course.title
           }
-        },
-        questions: submission.test.topic.questions.map(question => ({
+        } : null,
+        questions: submission.test.topic?.questions?.map(question => ({
           id: question.id,
           text: question.text,
           type: question.type,
           difficulty: question.difficulty,
           points: question.points,
-          options: question.options.map(opt => opt.text),
+          options: question.options?.map(opt => opt.text) || [],
           correctAnswer: question.correctAnswer,
           explanation: question.explanation
         }))

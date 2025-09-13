@@ -53,6 +53,10 @@ export async function GET() {
         price: 60000,
         duration: '6 months',
         maxStudents: 30,
+        instructor: 'Dr. Sarah Johnson',
+        difficulty: 'ADVANCED',
+        estimatedHours: 120,
+        isActive: true,
         creatorId: admin.id,
       }
     });
@@ -64,6 +68,10 @@ export async function GET() {
         price: 40000,
         duration: '2 months',
         maxStudents: 25,
+        instructor: 'Prof. Michael Chen',
+        difficulty: 'INTERMEDIATE',
+        estimatedHours: 80,
+        isActive: true,
         creatorId: admin.id,
       }
     });
@@ -75,6 +83,10 @@ export async function GET() {
         price: 80000,
         duration: 'Monthly',
         maxStudents: 1,
+        instructor: 'Dr. Emily Rodriguez',
+        difficulty: 'BEGINNER',
+        estimatedHours: 30,
+        isActive: true,
         creatorId: admin.id,
       }
     });

@@ -17,7 +17,7 @@ export async function GET() {
     // Lazy import to prevent build-time issues
     const { prisma } = await import('@/lib/prisma');
     
-    // Fetch courses with assigned tutors and their capacity
+    // Fetch courses with their tutors and enrollment data
     const courses = await prisma.course.findMany({
       where: {
         status: 'ACTIVE'
@@ -38,9 +38,48 @@ export async function GET() {
       }
     });
 
+    // Get all tutors for the courses
+    const allTutorIds = new Set<string>();
+    courses.forEach(course => {
+      course.enrollments.forEach(enrollment => {
+        if (enrollment.tutorId && enrollment.tutorId.trim() !== '') {
+          allTutorIds.add(enrollment.tutorId);
+        }
+      });
+    });
+
+    // Fetch tutor details
+    const tutors = await prisma.user.findMany({
+      where: {
+        id: { in: Array.from(allTutorIds) },
+        role: 'TUTOR'
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        profile: {
+          select: {
+            experience: true
+          }
+        }
+      }
+    });
+
+    // Create tutor lookup map
+    const tutorMap = new Map();
+    tutors.forEach(tutor => {
+      tutorMap.set(tutor.id, {
+        id: tutor.id,
+        name: tutor.name,
+        email: tutor.email,
+        experience: tutor.profile?.experience || 'Teaching experience'
+      });
+    });
+
     // Transform the data to include available tutors with capacity
     const transformedCourses = courses.map(course => {
-      // Filter enrollments that have tutors and group by tutor
+      // Group enrollments by tutor
       const tutorEnrollments = course.enrollments
         .filter(enrollment => enrollment.tutorId && enrollment.tutorId.trim() !== '')
         .reduce((acc, enrollment) => {
@@ -51,25 +90,26 @@ export async function GET() {
           return acc;
         }, {} as Record<string, any[]>);
 
-      // Get unique tutor IDs
-      const tutorIds = Object.keys(tutorEnrollments);
-      
-      // For now, we'll return basic course info
-      // In a real implementation, you'd fetch tutor details here
+      // Get available tutors with their data
+      const availableTutors = Object.keys(tutorEnrollments).map(tutorId => {
+        const tutorData = tutorMap.get(tutorId);
+        return {
+          id: tutorId,
+          name: tutorData?.name || 'Unknown Tutor',
+          email: tutorData?.email || 'tutor@email.com',
+          assignedStudents: tutorEnrollments[tutorId].length,
+          maxStudents: 40,
+          experience: tutorData?.experience || 'Teaching experience'
+        };
+      });
+
       return {
         id: course.id,
         title: course.title,
         description: course.description,
         price: course.price,
         duration: course.duration,
-        availableTutors: tutorIds.map(tutorId => ({
-          id: tutorId,
-          name: 'Tutor Name', // This would be fetched from tutor data
-          email: 'tutor@email.com',
-          assignedStudents: tutorEnrollments[tutorId].length,
-          maxStudents: 40,
-          experience: 'Teaching experience'
-        }))
+        availableTutors
       };
     });
 

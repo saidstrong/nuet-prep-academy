@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NUET Local Website Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 3px; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .instructions { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>🔍 NUET Local Website Test</h1>
+    
+    <div class="instructions">
+        <h3>📋 Instructions:</h3>
+        <ol>
+            <li>Start your local development server: <code>npm run dev</code></li>
+            <li>Make sure it's running on <code>http://localhost:3000</code></li>
+            <li>Click the test buttons below to verify all functions work</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>📚 Course APIs</h2>
+        <button onclick="testCoursesAPI()">Test Main Courses API</button>
+        <button onclick="testCourseDetails()">Test Course Details (1-5)</button>
+        <button onclick="testStudentCourses()">Test Student Courses</button>
+        <div id="courses-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>👤 User & Auth APIs</h2>
+        <button onclick="testAuthAPIs()">Test Authentication APIs</button>
+        <button onclick="testProfileAPI()">Test Profile API</button>
+        <div id="auth-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 Admin APIs</h2>
+        <button onclick="testAdminAPIs()">Test Admin APIs</button>
+        <button onclick="testAdminStats()">Test Admin Stats</button>
+        <div id="admin-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>👨‍🏫 Tutor APIs</h2>
+        <button onclick="testTutorAPIs()">Test Tutor APIs</button>
+        <div id="tutor-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>💬 Chat APIs</h2>
+        <button onclick="testChatAPIs()">Test Chat APIs</button>
+        <div id="chat-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Dashboard Pages</h2>
+        <button onclick="testDashboardPages()">Test Dashboard Pages</button>
+        <div id="dashboard-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🚀 Run All Tests</h2>
+        <button onclick="runAllTests()" style="background-color: #007bff; color: white; font-size: 16px; padding: 15px 30px;">Run Complete Test Suite</button>
+        <div id="all-results"></div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:3000';
+        
+        function addResult(containerId, message, type = 'info') {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            container.appendChild(div);
+        }
+
+        async function testAPI(endpoint, containerId, description) {
+            try {
+                addResult(containerId, `Testing ${description}...`, 'info');
+                const response = await fetch(`${BASE_URL}${endpoint}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addResult(containerId, `✅ ${description}: ${response.status} - ${JSON.stringify(data).substring(0, 100)}...`, 'success');
+                    return true;
+                } else {
+                    addResult(containerId, `❌ ${description}: ${response.status} - ${data.error || 'Unknown error'}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                addResult(containerId, `❌ ${description}: Network error - ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function testCoursesAPI() {
+            const containerId = 'courses-results';
+            document.getElementById(containerId).innerHTML = '';
+            
+            await testAPI('/api/courses', containerId, 'Main Courses API');
+            await testAPI('/api/courses/course-1', containerId, 'Course 1 Details');
+            await testAPI('/api/courses/course-2', containerId, 'Course 2 Details');
+            await testAPI('/api/courses/course-3', containerId, 'Course 3 Details');
+            await testAPI('/api/courses/course-4', containerId, 'Course 4 Details');
+            await testAPI('/api/courses/course-5', containerId, 'Course 5 Details');
+        }
+
+        async function testCourseDetails() {
+            const containerId = 'courses-results';
+            addResult(containerId, 'Testing all course detail endpoints...', 'info');
+            
+            for (let i = 1; i <= 5; i++) {
+                await testAPI(`/api/courses/course-${i}`, containerId, `Course ${i} Details`);
+            }
+        }
+
+        async function testStudentCourses() {
+            const containerId = 'courses-results';
+            await testAPI('/api/student/courses', containerId, 'Student Courses API');
+        }
+
+        async function testAuthAPIs() {
+            const containerId = 'auth-results';
+            document.getElementById(containerId).innerHTML = '';
+            
+            await testAPI('/api/auth/signup', containerId, 'Signup API');
+            await testAPI('/api/check-session', containerId, 'Check Session API');
+        }
+
+        async function testProfileAPI() {
+            const containerId = 'auth-results';
+            await testAPI('/api/profile', containerId, 'Profile API');
+        }
+
+        async function testAdminAPIs() {
+            const containerId = 'admin-results';
+            document.getElementById(containerId).innerHTML = '';
+            
+            await testAPI('/api/admin/courses', containerId, 'Admin Courses API');
+            await testAPI('/api/admin/students', containerId, 'Admin Students API');
+            await testAPI('/api/admin/tutors', containerId, 'Admin Tutors API');
+        }
+
+        async function testAdminStats() {
+            const containerId = 'admin-results';
+            await testAPI('/api/admin/stats', containerId, 'Admin Stats API');
+        }
+
+        async function testTutorAPIs() {
+            const containerId = 'tutor-results';
+            document.getElementById(containerId).innerHTML = '';
+            
+            await testAPI('/api/tutor/courses', containerId, 'Tutor Courses API');
+            await testAPI('/api/tutor/students', containerId, 'Tutor Students API');
+        }
+
+        async function testChatAPIs() {
+            const containerId = 'chat-results';
+            document.getElementById(containerId).innerHTML = '';
+            
+            await testAPI('/api/chat/chats', containerId, 'Chat List API');
+            await testAPI('/api/chat/messages', containerId, 'Chat Messages API');
+        }
+
+        async function testDashboardPages() {
+            const containerId = 'dashboard-results';
+            document.getElementById(containerId).innerHTML = '';
+            
+            const pages = [
+                { url: '/student/dashboard', name: 'Student Dashboard' },
+                { url: '/tutor/dashboard', name: 'Tutor Dashboard' },
+                { url: '/admin/dashboard', name: 'Admin Dashboard' },
+                { url: '/courses', name: 'Courses Page' },
+                { url: '/chat', name: 'Chat Page' }
+            ];
+            
+            for (const page of pages) {
+                try {
+                    addResult(containerId, `Testing ${page.name}...`, 'info');
+                    const response = await fetch(`${BASE_URL}${page.url}`);
+                    if (response.ok) {
+                        addResult(containerId, `✅ ${page.name}: ${response.status} - Page loads successfully`, 'success');
+                    } else {
+                        addResult(containerId, `❌ ${page.name}: ${response.status} - Page failed to load`, 'error');
+                    }
+                } catch (error) {
+                    addResult(containerId, `❌ ${page.name}: Network error - ${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function runAllTests() {
+            const containerId = 'all-results';
+            document.getElementById(containerId).innerHTML = '';
+            
+            addResult(containerId, '🚀 Starting comprehensive test suite...', 'info');
+            
+            let totalTests = 0;
+            let passedTests = 0;
+            
+            // Test all APIs
+            const apiTests = [
+                { fn: testCoursesAPI, name: 'Course APIs' },
+                { fn: testAuthAPIs, name: 'Auth APIs' },
+                { fn: testAdminAPIs, name: 'Admin APIs' },
+                { fn: testTutorAPIs, name: 'Tutor APIs' },
+                { fn: testChatAPIs, name: 'Chat APIs' },
+                { fn: testDashboardPages, name: 'Dashboard Pages' }
+            ];
+            
+            for (const test of apiTests) {
+                addResult(containerId, `Running ${test.name}...`, 'info');
+                try {
+                    await test.fn();
+                    passedTests++;
+                } catch (error) {
+                    addResult(containerId, `❌ ${test.name} failed: ${error.message}`, 'error');
+                }
+                totalTests++;
+            }
+            
+            addResult(containerId, `📊 Test Complete: ${passedTests}/${totalTests} test suites passed`, 
+                     passedTests === totalTests ? 'success' : 'error');
+        }
+
+        // Auto-run basic tests on page load
+        window.onload = function() {
+            addResult('courses-results', '🚀 Ready to test! Make sure your local server is running on localhost:3000', 'info');
+        };
+    </script>
+</body>
+</html>

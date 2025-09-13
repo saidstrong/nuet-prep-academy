@@ -37,12 +37,30 @@ export const metadata: Metadata = {
     locale: 'en_US',
     type: 'website'
   },
-  icons: { icon: '/favicon.ico' }
+  icons: {
+    icon: [
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon.ico', sizes: 'any' }
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }
+    ],
+    other: [
+      { rel: 'mask-icon', url: '/safari-pinned-tab.svg', color: '#2563eb' }
+    ]
+  }
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="manifest" href="/site.webmanifest" />
+        <meta name="theme-color" content="#2563eb" />
+        <meta name="msapplication-TileColor" content="#2563eb" />
+        <meta name="msapplication-config" content="/browserconfig.xml" />
+      </head>
       <body className={inter.className}>
         <Providers>
           {children}

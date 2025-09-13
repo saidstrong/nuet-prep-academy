@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NUET Prep Academy - Excellence in Education</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-blue-600 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-book text-2xl mr-3"></i>
+                    <div>
+                        <h1 class="text-xl font-bold">NUET PREP ACADEMY</h1>
+                        <p class="text-sm text-blue-200">Excellence in Education</p>
+                    </div>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#home" class="hover:text-blue-200 transition">Home</a>
+                    <a href="#courses" class="hover:text-blue-200 transition">Courses</a>
+                    <a href="#about" class="hover:text-blue-200 transition">About</a>
+                    <a href="#contact" class="hover:text-blue-200 transition">Contact</a>
+                    <select class="bg-blue-500 text-white px-2 py-1 rounded">
+                        <option>🇺🇸 English</option>
+                        <option>🇰🇿 Қазақша</option>
+                        <option>🇷🇺 Русский</option>
+                    </select>
+                    <button class="bg-blue-500 hover:bg-blue-700 px-4 py-2 rounded transition" onclick="showLogin()">Sign In</button>
+                    <button class="bg-orange-500 hover:bg-orange-700 px-4 py-2 rounded transition" onclick="showSignup()">Sign Up</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-2 gap-10 items-center">
+                <div>
+                    <h2 class="text-4xl md:text-6xl font-bold mb-6">Master the NUET Exam</h2>
+                    <p class="text-xl mb-8 text-blue-100">Comprehensive preparation courses designed to help you excel in the National University Entrance Test. Join thousands of successful students who achieved their dreams with our expert guidance.</p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <button class="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition" onclick="showEnrollModal()">Enroll Now</button>
+                        <button class="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition" onclick="scrollToCourses()">View Courses</button>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <div class="bg-white bg-opacity-20 rounded-lg p-8 backdrop-blur-sm">
+                        <i class="fas fa-graduation-cap text-6xl mb-4"></i>
+                        <h3 class="text-2xl font-bold mb-2">Success Rate</h3>
+                        <p class="text-4xl font-bold text-yellow-300">95%</p>
+                        <p class="text-blue-100">of our students pass the NUET exam</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Courses Section -->
+    <section id="courses" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Our Courses</h2>
+                <p class="text-xl text-gray-600">Comprehensive preparation for all NUET subjects</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Course 1 -->
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
+                    <div class="h-48 bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center">
+                        <i class="fas fa-calculator text-6xl text-white"></i>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold mb-2">NUET Mathematics</h3>
+                        <p class="text-gray-600 mb-4">Master algebra, geometry, and problem-solving techniques</p>
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-2xl font-bold text-green-600">₸35,000</span>
+                            <span class="text-sm text-gray-500">40 hours</span>
+                        </div>
+                        <button class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition" onclick="enrollCourse('course-1')">Enroll Now</button>
+                    </div>
+                </div>
+
+                <!-- Course 2 -->
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
+                    <div class="h-48 bg-gradient-to-r from-purple-400 to-pink-500 flex items-center justify-center">
+                        <i class="fas fa-atom text-6xl text-white"></i>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold mb-2">NUET Physics</h3>
+                        <p class="text-gray-600 mb-4">Essential physics concepts and problem-solving strategies</p>
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-2xl font-bold text-green-600">₸42,000</span>
+                            <span class="text-sm text-gray-500">35 hours</span>
+                        </div>
+                        <button class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition" onclick="enrollCourse('course-2')">Enroll Now</button>
+                    </div>
+                </div>
+
+                <!-- Course 3 -->
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
+                    <div class="h-48 bg-gradient-to-r from-yellow-400 to-orange-500 flex items-center justify-center">
+                        <i class="fas fa-flask text-6xl text-white"></i>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold mb-2">NUET Chemistry</h3>
+                        <p class="text-gray-600 mb-4">Complete chemistry preparation for all levels</p>
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-2xl font-bold text-green-600">₸48,000</span>
+                            <span class="text-sm text-gray-500">45 hours</span>
+                        </div>
+                        <button class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition" onclick="enrollCourse('course-3')">Enroll Now</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Why Choose Us?</h2>
+                <p class="text-xl text-gray-600">We provide the best preparation for your NUET success</p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="text-center">
+                    <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-users text-2xl text-blue-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Expert Instructors</h3>
+                    <p class="text-gray-600">Learn from experienced teachers who know the NUET exam inside out</p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-chart-line text-2xl text-green-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Proven Results</h3>
+                    <p class="text-gray-600">95% of our students successfully pass the NUET exam</p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-clock text-2xl text-purple-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Flexible Schedule</h3>
+                    <p class="text-gray-600">Study at your own pace with our flexible learning options</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <h3 class="text-2xl font-bold mb-6">Welcome Back</h3>
+            <p class="text-gray-600 mb-6">Sign in to your NUET Prep Academy account</p>
+            
+            <form id="loginForm">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                    <input type="email" id="loginEmail" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="anton.ivanova@gmail.com" required>
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <input type="password" id="loginPassword" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="admin123" required>
+                </div>
+                
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition">Sign In</button>
+            </form>
+            
+            <p class="text-center mt-4">
+                <a href="#" class="text-blue-600 hover:underline">Forgot your password?</a>
+            </p>
+            
+            <button onclick="hideLogin()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Enrollment Modal -->
+    <div id="enrollModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <h3 class="text-2xl font-bold mb-6">Choose Enrollment Method</h3>
+            <p class="text-gray-600 mb-6">Select your preferred way to get in touch with us for enrollment:</p>
+            
+            <div class="space-y-4">
+                <button onclick="enrollWhatsApp()" class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-lg transition flex items-center justify-center space-x-2">
+                    <i class="fab fa-whatsapp text-xl"></i>
+                    <span>WhatsApp</span>
+                </button>
+                
+                <button onclick="enrollTelegram()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition flex items-center justify-center space-x-2">
+                    <i class="fab fa-telegram text-xl"></i>
+                    <span>Telegram</span>
+                </button>
+            </div>
+            
+            <button onclick="hideEnrollModal()" class="w-full mt-4 text-gray-500 hover:text-gray-700 font-medium py-2">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">NUET Prep Academy</h3>
+                    <p class="text-gray-400">Excellence in Education. Your path to university success starts here.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Courses</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white transition">Mathematics</a></li>
+                        <li><a href="#" class="hover:text-white transition">Physics</a></li>
+                        <li><a href="#" class="hover:text-white transition">Chemistry</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Support</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white transition">Help Center</a></li>
+                        <li><a href="#" class="hover:text-white transition">Contact Us</a></li>
+                        <li><a href="#" class="hover:text-white transition">FAQ</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Contact</h4>
+                    <p class="text-gray-400 mb-2">📞 +7 (707) 521-49-11</p>
+                    <p class="text-gray-400 mb-2">📧 info@nuetprep.com</p>
+                    <p class="text-gray-400">📍 Almaty, Kazakhstan</p>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2024 NUET Prep Academy. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mock data for testing
+        const mockCourses = {
+            'course-1': { name: 'NUET Mathematics', price: '₸35,000' },
+            'course-2': { name: 'NUET Physics', price: '₸42,000' },
+            'course-3': { name: 'NUET Chemistry', price: '₸48,000' }
+        };
+
+        // Modal functions
+        function showLogin() {
+            document.getElementById('loginModal').classList.remove('hidden');
+            document.getElementById('loginModal').classList.add('flex');
+        }
+
+        function hideLogin() {
+            document.getElementById('loginModal').classList.add('hidden');
+            document.getElementById('loginModal').classList.remove('flex');
+        }
+
+        function showEnrollModal() {
+            document.getElementById('enrollModal').classList.remove('hidden');
+            document.getElementById('enrollModal').classList.add('flex');
+        }
+
+        function hideEnrollModal() {
+            document.getElementById('enrollModal').classList.add('hidden');
+            document.getElementById('enrollModal').classList.remove('flex');
+        }
+
+        // Enrollment functions
+        function enrollWhatsApp() {
+            const message = encodeURIComponent("Hello! I'm interested in NUET preparation courses. Could you please provide more information?");
+            window.open(`https://wa.me/77075214911?text=${message}`, '_blank');
+            hideEnrollModal();
+        }
+
+        function enrollTelegram() {
+            window.open('https://t.me/sherlockzini', '_blank');
+            hideEnrollModal();
+        }
+
+        function enrollCourse(courseId) {
+            const course = mockCourses[courseId];
+            if (course) {
+                alert(`Enrolling in ${course.name} (${course.price})\n\nThis will redirect you to WhatsApp or Telegram for enrollment.`);
+                showEnrollModal();
+            }
+        }
+
+        function scrollToCourses() {
+            document.getElementById('courses').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Login form handling
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            // Mock authentication
+            const validCredentials = [
+                { email: 'admin@nuet.com', password: 'admin123', role: 'admin' },
+                { email: 'tutor@nuet.com', password: 'tutor123', role: 'tutor' },
+                { email: 'student@nuet.com', password: 'student123', role: 'student' },
+                { email: 'anton.ivanova@gmail.com', password: 'admin123', role: 'admin' }
+            ];
+            
+            const user = validCredentials.find(u => u.email === email && u.password === password);
+            
+            if (user) {
+                alert(`Welcome back, ${user.role.toUpperCase()}!\n\nYou are now logged in. In a full application, you would be redirected to your dashboard.`);
+                hideLogin();
+            } else {
+                alert('Invalid email or password. Please try again.');
+            }
+        });
+
+        // Smooth scrolling for navigation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
