@@ -1,16 +1,8 @@
 [build]
-  command = "npm run build"
-  publish = ".next"
-
-[build.environment]
-  NODE_VERSION = "18"
-  NEXTAUTH_URL = "https://warm-otter-759194.netlify.app"
-  NEXTAUTH_SECRET = "nuet-prep-academy-secret-key-2024"
+  command = "echo 'Static site ready'"
+  publish = "public"
 
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-
-[functions]
-  directory = "netlify/functions"
