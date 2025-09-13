@@ -4,12 +4,10 @@
   "description": "NUET Prep Academy - Static Website",
   "main": "index.html",
   "scripts": {
-    "build": "node build.js"
+    "build": "echo 'Static site ready'",
+    "start": "echo 'Static site ready'"
   },
-  "keywords": ["static", "website", "nuet"],
+  "keywords": ["nuet", "prep", "academy", "static", "website"],
   "author": "NUET Prep Academy",
-  "license": "MIT",
-  "dependencies": {
-    "express": "^4.18.0"
-  }
+  "license": "MIT"
 }
