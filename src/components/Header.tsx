@@ -72,15 +72,7 @@ export default function Header() {
                     My Courses
                   </Link>
                   
-                  <Link href="/progress" className="px-3 py-2 text-blue-100 hover:text-white hover:bg-blue-700/50 rounded-lg transition-all duration-200 font-medium flex items-center space-x-1 text-sm">
-                    <BarChart3 className="w-4 h-4" />
-                    <span>Progress</span>
-                  </Link>
-
-                  <Link href="/chat" className="px-3 py-2 text-blue-100 hover:text-white hover:bg-blue-700/50 rounded-lg transition-all duration-200 font-medium flex items-center space-x-1 text-sm">
-                    <MessageCircle className="w-4 h-4" />
-                    <span>Chat</span>
-                  </Link>
+                  {/* Progress and Chat links hidden as requested */}
                   
                   {(session.user.role === 'OWNER' || session.user.role === 'ADMIN' || session.user.role === 'MANAGER') && (
                     <>

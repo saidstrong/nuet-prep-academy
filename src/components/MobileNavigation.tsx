@@ -79,36 +79,37 @@ export default function MobileNavigation({ isOpen, onClose }: MobileNavigationPr
       icon: BookOpen,
       roles: ['STUDENT']
     },
-    {
-      name: 'Progress',
-      href: '/progress',
-      icon: BarChart3,
-      roles: ['STUDENT']
-    },
-    {
-      name: 'Study Streak',
-      href: '/study-streak',
-      icon: Trophy,
-      roles: ['STUDENT']
-    },
-    {
-      name: 'Leaderboard',
-      href: '/leaderboard',
-      icon: Trophy,
-      roles: ['STUDENT']
-    },
-    {
-      name: 'Challenges',
-      href: '/challenges',
-      icon: Target,
-      roles: ['STUDENT']
-    },
-    {
-      name: 'Chat',
-      href: '/chat',
-      icon: MessageSquare,
-      roles: ['STUDENT', 'TUTOR', 'ADMIN', 'MANAGER']
-    },
+    // Gamification and chat features hidden as requested
+    // {
+    //   name: 'Progress',
+    //   href: '/progress',
+    //   icon: BarChart3,
+    //   roles: ['STUDENT']
+    // },
+    // {
+    //   name: 'Study Streak',
+    //   href: '/study-streak',
+    //   icon: Trophy,
+    //   roles: ['STUDENT']
+    // },
+    // {
+    //   name: 'Leaderboard',
+    //   href: '/leaderboard',
+    //   icon: Trophy,
+    //   roles: ['STUDENT']
+    // },
+    // {
+    //   name: 'Challenges',
+    //   href: '/challenges',
+    //   icon: Target,
+    //   roles: ['STUDENT']
+    // },
+    // {
+    //   name: 'Chat',
+    //   href: '/chat',
+    //   icon: MessageSquare,
+    //   roles: ['STUDENT', 'TUTOR', 'ADMIN', 'MANAGER']
+    // },
     {
       name: 'Profile',
       href: '/profile',
