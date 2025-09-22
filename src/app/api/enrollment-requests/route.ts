@@ -30,6 +30,10 @@ export async function GET(request: NextRequest) {
     // Try to fetch with basic query first
     let requests;
     try {
+      // Test database connection first
+      await prisma.$connect();
+      console.log('✅ Database connected successfully');
+      
       requests = await prisma.enrollmentRequest.findMany({
         where: whereClause,
         include: {
@@ -63,6 +67,13 @@ export async function GET(request: NextRequest) {
       console.log('✅ Successfully fetched requests:', requests.length);
     } catch (dbError) {
       console.error('❌ Database error:', dbError);
+      
+      // Check if it's a connection error
+      if (dbError.message && dbError.message.includes('Can\'t reach database server')) {
+        console.log('🔄 Database server unreachable, using mock data');
+      } else {
+        console.log('🔄 Database query failed, using mock data');
+      }
       
       // Fallback to mock data if database fails
       const mockRequests = [
@@ -142,10 +153,33 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if course exists
-    const course = await prisma.course.findUnique({
-      where: { id: courseId },
-      select: { id: true, title: true, price: true }
-    });
+    let course;
+    try {
+      // Test database connection first
+      await prisma.$connect();
+      console.log('✅ Database connected successfully');
+      
+      course = await prisma.course.findUnique({
+        where: { id: courseId },
+        select: { id: true, title: true, price: true }
+      });
+      console.log('📚 Course found:', course ? 'Yes' : 'No');
+    } catch (dbError) {
+      console.error('❌ Database error checking course:', dbError);
+      
+      // If database is unreachable, return a more user-friendly error
+      if (dbError.message && dbError.message.includes('Can\'t reach database server')) {
+        return NextResponse.json({ 
+          error: 'Service temporarily unavailable. Please try again later.',
+          details: 'Database connection failed'
+        }, { status: 503 });
+      }
+      
+      return NextResponse.json({ 
+        error: 'Database error checking course',
+        details: dbError instanceof Error ? dbError.message : 'Unknown error'
+      }, { status: 500 });
+    }
 
     if (!course) {
       return NextResponse.json({ error: 'Course not found' }, { status: 404 });
@@ -167,44 +201,63 @@ export async function POST(request: NextRequest) {
     }
 
     // Create enrollment request
-    const enrollmentRequest = await prisma.enrollmentRequest.create({
-      data: {
-        courseId,
-        studentName,
-        studentEmail,
-        studentPhone,
-        whatsappNumber: whatsappNumber || null,
-        telegramUsername: telegramUsername || null,
-        preferredContact,
-        selectedTutor: selectedTutor || null,
-        message: message || null,
-        status: 'PENDING'
-      },
-      include: {
-        course: {
-          select: {
-            id: true,
-            title: true,
-            price: true,
-            instructor: true
-          }
+    let enrollmentRequest;
+    try {
+      enrollmentRequest = await prisma.enrollmentRequest.create({
+        data: {
+          courseId,
+          studentName,
+          studentEmail,
+          studentPhone,
+          whatsappNumber: whatsappNumber || null,
+          telegramUsername: telegramUsername || null,
+          preferredContact,
+          selectedTutor: selectedTutor || null,
+          message: message || null,
+          status: 'PENDING'
         },
-        student: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        },
-        tutor: {
-          select: {
-            id: true,
-            name: true,
-            email: true
+        include: {
+          course: {
+            select: {
+              id: true,
+              title: true,
+              price: true,
+              instructor: true
+            }
+          },
+          student: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          },
+          tutor: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
           }
         }
+      });
+      console.log('✅ Enrollment request created successfully');
+    } catch (dbError) {
+      console.error('❌ Database error creating enrollment request:', dbError);
+      
+      // If database is unreachable, return a more user-friendly error
+      if (dbError.message && dbError.message.includes('Can\'t reach database server')) {
+        return NextResponse.json({ 
+          error: 'Service temporarily unavailable. Please try again later.',
+          details: 'Database connection failed'
+        }, { status: 503 });
       }
-    });
+      
+      return NextResponse.json({ 
+        error: 'Database error creating enrollment request',
+        details: dbError instanceof Error ? dbError.message : 'Unknown error'
+      }, { status: 500 });
+    }
 
     return NextResponse.json({ 
       success: true, 
