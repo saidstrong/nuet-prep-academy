@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { isAdminOrManager } from '@/lib/auth';
 import {
   Plus, BookOpen, Users, Clock, Target, Edit2, Trash2, Eye,
   ChevronRight, Search, Filter, Star, PlayCircle, FileText,
@@ -56,7 +57,7 @@ export default function CourseManagementPage() {
   });
 
   useEffect(() => {
-    if (session?.user?.role === 'ADMIN') {
+    if (session?.user?.role && isAdminOrManager(session.user.role)) {
       fetchData();
     }
   }, [session]);

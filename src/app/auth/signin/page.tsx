@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, Suspense } from 'react';
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/Header';
@@ -8,6 +8,7 @@ import Footer from '@/components/Footer';
 import { signinSchema } from '@/lib/validation';
 
 function SignInForm() {
+  const { data: session } = useSession();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -21,6 +22,13 @@ function SignInForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const message = searchParams.get('message');
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (session) {
+      router.push('/');
+    }
+  }, [session, router]);
 
   // Lock account after 5 failed attempts
   useEffect(() => {

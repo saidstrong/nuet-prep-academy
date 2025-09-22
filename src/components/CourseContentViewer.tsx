@@ -69,7 +69,7 @@ const CourseContentViewer: React.FC<CourseContentViewerProps> = ({
       const response = await fetch(`/api/courses/${courseId}/content`);
       const data = await response.json();
       
-      if (data.success) {
+      if (data.success && data.content) {
         setContent(data.content);
         if (data.content.length > 0) {
           setSelectedContent(data.content[0]);
@@ -191,7 +191,7 @@ const CourseContentViewer: React.FC<CourseContentViewerProps> = ({
               <p className="text-slate-600">{selectedContent.description}</p>
             </div>
             
-            {selectedContent.questions?.map((question, index) => (
+            {selectedContent.questions && selectedContent.questions.length > 0 ? selectedContent.questions.map((question, index) => (
               <Card key={question.id}>
                 <CardContent className="p-6">
                   <h3 className="text-lg font-semibold mb-4">
@@ -217,7 +217,12 @@ const CourseContentViewer: React.FC<CourseContentViewerProps> = ({
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            )) : (
+              <div className="text-center py-8">
+                <BookOpen className="w-12 h-12 mx-auto text-slate-400 mb-4" />
+                <p className="text-slate-600">No questions available for this quiz</p>
+              </div>
+            )}
 
             <div className="flex justify-between items-center">
               <p className="text-sm text-slate-500">

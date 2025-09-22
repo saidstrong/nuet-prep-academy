@@ -1,142 +1,321 @@
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient()
 
 async function main() {
-  console.log('🌱 Starting database seed...');
+  console.log('🌱 Starting database seed...')
 
-  // Hash password for admin user
-  const hashedPassword = await bcrypt.hash('admin123', 12);
+  // Create users
+  const hashedPassword = await bcrypt.hash('admin123', 12)
+  const studentPassword = await bcrypt.hash('student123', 12)
+  const managerPassword = await bcrypt.hash('manager123', 12)
+  const tutorPassword = await bcrypt.hash('tutor123', 12)
 
-  // Create admin user
-  const adminUser = await prisma.user.upsert({
+  const admin = await prisma.user.upsert({
     where: { email: 'admin@nuetprep.academy' },
     update: {},
     create: {
-              email: 'admin@nuetprep.academy',
-      name: 'Said Amanzhol',
+      email: 'admin@nuetprep.academy',
+      name: 'Admin User',
       password: hashedPassword,
       role: 'ADMIN',
     },
-  });
+  })
 
-  console.log('✅ Admin user created:', adminUser.email);
-
-  // Create admin profile
-  await prisma.profile.upsert({
-    where: { userId: adminUser.id },
+  const manager1 = await prisma.user.upsert({
+    where: { email: 'yeraltay@manager.com' },
     update: {},
     create: {
-      userId: adminUser.id,
-      bio: 'Founder and admin of NUET Prep Academy',
-      phone: '+77075214911',
-      whatsapp: '+77075214911',
-      experience: '5+ years in education',
+      email: 'yeraltay@manager.com',
+      name: 'Yeraltay Manager',
+      password: managerPassword,
+      role: 'MANAGER',
     },
-  });
+  })
 
-  console.log('✅ Admin profile created');
+  const manager2 = await prisma.user.upsert({
+    where: { email: 'asylzada@manager.com' },
+    update: {},
+    create: {
+      email: 'asylzada@manager.com',
+      name: 'Asylzada Manager',
+      password: managerPassword,
+      role: 'MANAGER',
+    },
+  })
 
-  // Create sample courses
+  const tutor = await prisma.user.upsert({
+    where: { email: 'tutor@nuet.com' },
+    update: {},
+    create: {
+      email: 'tutor@nuet.com',
+      name: 'Tutor User',
+      password: tutorPassword,
+      role: 'TUTOR',
+    },
+  })
+
+  const student = await prisma.user.upsert({
+    where: { email: 'student@nuet.com' },
+    update: {},
+    create: {
+      email: 'student@nuet.com',
+      name: 'Student User',
+      password: studentPassword,
+      role: 'STUDENT',
+    },
+  })
+
+  const antonStudent = await prisma.user.upsert({
+    where: { email: 'anton.ivanova@gmail.com' },
+    update: {},
+    create: {
+      email: 'anton.ivanova@gmail.com',
+      name: 'Anton Ivanova',
+      password: studentPassword,
+      role: 'STUDENT',
+    },
+  })
+
+  // Create additional tutors
+  const tutor1 = await prisma.user.upsert({
+    where: { email: 'tutor1@nuet.com' },
+    update: {},
+    create: {
+      email: 'tutor1@nuet.com',
+      name: 'Dr. Sarah Johnson',
+      password: tutorPassword,
+      role: 'TUTOR',
+    },
+  })
+
+  const tutor2 = await prisma.user.upsert({
+    where: { email: 'tutor2@nuet.com' },
+    update: {},
+    create: {
+      email: 'tutor2@nuet.com',
+      name: 'Prof. Michael Chen',
+      password: tutorPassword,
+      role: 'TUTOR',
+    },
+  })
+
+  const tutor3 = await prisma.user.upsert({
+    where: { email: 'tutor3@nuet.com' },
+    update: {},
+    create: {
+      email: 'tutor3@nuet.com',
+      name: 'Dr. Aisha Rahman',
+      password: tutorPassword,
+      role: 'TUTOR',
+    },
+  })
+
+  // Create profiles for tutors
+  await prisma.profile.upsert({
+    where: { userId: tutor1.id },
+    update: {},
+    create: {
+      userId: tutor1.id,
+      bio: 'Mathematics & Physics Specialist',
+      specialization: 'Advanced Mathematics',
+      experience: '8+ years',
+    },
+  })
+
+  await prisma.profile.upsert({
+    where: { userId: tutor2.id },
+    update: {},
+    create: {
+      userId: tutor2.id,
+      bio: 'Engineering Mathematics Expert',
+      specialization: 'Calculus & Analysis',
+      experience: '12+ years',
+    },
+  })
+
+  await prisma.profile.upsert({
+    where: { userId: tutor3.id },
+    update: {},
+    create: {
+      userId: tutor3.id,
+      bio: 'Statistics & Probability Specialist',
+      specialization: 'Data Analysis',
+      experience: '6+ years',
+    },
+  })
+
+  console.log('✅ Users created:', { admin: admin.email, manager1: manager1.email, manager2: manager2.email, tutor: tutor.email, student: student.email, anton: antonStudent.email })
+
+  // Create courses
   const course1 = await prisma.course.upsert({
     where: { id: 'course-1' },
     update: {},
     create: {
       id: 'course-1',
-      title: 'NUET Full Prep',
-      description: '60,000 ₸ for 6 months. Math, Critical Thinking, English. Weekday online lessons for new topics. Saturday full sample test on the website; Sunday review with solutions and feedback.',
-      price: 60000,
-      duration: '6 months',
+      title: 'NUET Mathematics Fundamentals',
+      description: 'Master the essential mathematical concepts required for NUET success. This comprehensive course covers algebra, geometry, trigonometry, and calculus fundamentals.',
+      price: 15000,
+      duration: '8 weeks',
       status: 'ACTIVE',
-      maxStudents: 30,
-      instructor: 'Dr. Sarah Johnson',
-      difficulty: 'ADVANCED',
+      maxStudents: 50,
+      instructor: 'Dr. Mathematics Expert',
+      difficulty: 'Intermediate',
       estimatedHours: 120,
-      isActive: true,
-      creatorId: adminUser.id,
+      creatorId: admin.id,
     },
-  });
+  })
 
   const course2 = await prisma.course.upsert({
     where: { id: 'course-2' },
     update: {},
     create: {
       id: 'course-2',
-      title: 'NUET Crash Course',
-      description: '40,000 ₸ for 2 months. All topics, content, and problem sets with detailed solutions for self-prep, plus a full sample exam.',
-      price: 40000,
-      duration: '2 months',
+      title: 'NUET Physics Mastery',
+      description: 'Comprehensive physics course covering mechanics, thermodynamics, electromagnetism, and modern physics for NUET preparation.',
+      price: 18000,
+      duration: '10 weeks',
       status: 'ACTIVE',
-      maxStudents: 25,
-      instructor: 'Prof. Michael Chen',
-      difficulty: 'INTERMEDIATE',
-      estimatedHours: 80,
-      isActive: true,
-      creatorId: adminUser.id,
+      maxStudents: 40,
+      instructor: 'Prof. Physics Specialist',
+      difficulty: 'Advanced',
+      estimatedHours: 150,
+      creatorId: admin.id,
     },
-  });
+  })
 
   const course3 = await prisma.course.upsert({
     where: { id: 'course-3' },
     update: {},
     create: {
       id: 'course-3',
-      title: '1-on-1 Private Tutoring',
-      description: '80,000 ₸ per month. Daily 1-hour online sessions with the tutor focused on new topics.',
-      price: 80000,
-      duration: 'Monthly',
+      title: 'NUET Chemistry Essentials',
+      description: 'Essential chemistry concepts including organic, inorganic, and physical chemistry for NUET success.',
+      price: 16000,
+      duration: '9 weeks',
       status: 'ACTIVE',
-      maxStudents: 1,
-      instructor: 'Dr. Emily Rodriguez',
-      difficulty: 'BEGINNER',
-      estimatedHours: 30,
-      isActive: true,
-      creatorId: adminUser.id,
+      maxStudents: 45,
+      instructor: 'Dr. Chemistry Expert',
+      difficulty: 'Intermediate',
+      estimatedHours: 135,
+      creatorId: admin.id,
     },
-  });
+  })
 
-  console.log('✅ Sample courses created:', [course1.title, course2.title, course3.title].join(', '));
-
-  // Create sample topics for course 1
-  const topic1 = await prisma.topic.upsert({
-    where: { id: 'topic-1' },
+  const course4 = await prisma.course.upsert({
+    where: { id: 'course-4' },
     update: {},
     create: {
-      id: 'topic-1',
-      title: 'Mathematics Fundamentals',
-      description: 'Core mathematical concepts and problem-solving techniques',
+      id: 'course-4',
+      title: 'NUET Biology Complete',
+      description: 'Complete biology course covering cell biology, genetics, evolution, and ecology for NUET preparation.',
+      price: 14000,
+      duration: '7 weeks',
+      status: 'ACTIVE',
+      maxStudents: 60,
+      instructor: 'Prof. Biology Specialist',
+      difficulty: 'Intermediate',
+      estimatedHours: 105,
+      creatorId: admin.id,
+    },
+  })
+
+  const course5 = await prisma.course.upsert({
+    where: { id: 'course-5' },
+    update: {},
+    create: {
+      id: 'course-5',
+      title: 'NUET English Language',
+      description: 'English language proficiency course focusing on reading comprehension, grammar, and writing skills for NUET.',
+      price: 12000,
+      duration: '6 weeks',
+      status: 'ACTIVE',
+      maxStudents: 80,
+      instructor: 'Ms. English Expert',
+      difficulty: 'Beginner',
+      estimatedHours: 90,
+      creatorId: admin.id,
+    },
+  })
+
+  console.log('✅ Courses created:', { course1: course1.title, course2: course2.title, course3: course3.title, course4: course4.title, course5: course5.title })
+
+  // Create topics for course 1
+  const topic1 = await prisma.topic.create({
+    data: {
+      title: 'Algebra Fundamentals',
+      description: 'Basic algebraic concepts and operations',
       order: 1,
       courseId: course1.id,
     },
-  });
+  })
 
-  const topic2 = await prisma.topic.upsert({
-    where: { id: 'topic-2' },
-    update: {},
-    create: {
-      id: 'topic-2',
-      title: 'Critical Thinking',
-      description: 'Logical reasoning and analytical skills development',
+  const topic2 = await prisma.topic.create({
+    data: {
+      title: 'Geometry Basics',
+      description: 'Introduction to geometric shapes and properties',
       order: 2,
       courseId: course1.id,
     },
-  });
+  })
 
-  console.log('✅ Sample topics created');
+  // Create materials for topics
+  await prisma.material.create({
+    data: {
+      title: 'Algebra Introduction Video',
+      description: 'Introduction to algebraic concepts',
+      type: 'VIDEO',
+      url: '/uploads/algebra-intro.mp4',
+      order: 1,
+      topicId: topic1.id,
+      isPublished: true,
+    },
+  })
 
-  console.log('🎉 Database seeding completed successfully!');
-  console.log('👤 Admin account created:');
-  console.log(`   Email: admin@nuetprep.academy`);
-  console.log(`   Password: admin123`);
-  console.log(`   Role: ${adminUser.role}`);
+  await prisma.material.create({
+    data: {
+      title: 'Algebra Practice Problems',
+      description: 'Practice problems for algebra fundamentals',
+      type: 'PDF',
+      url: '/uploads/algebra-practice.pdf',
+      order: 2,
+      topicId: topic1.id,
+      isPublished: true,
+    },
+  })
+
+  // Create enrollment for student
+  await prisma.courseEnrollment.create({
+    data: {
+      courseId: course1.id,
+      studentId: student.id,
+      tutorId: tutor.id,
+      status: 'ACTIVE',
+      paymentStatus: 'PAID',
+      paymentMethod: 'CARD',
+    },
+  })
+
+  await prisma.courseEnrollment.create({
+    data: {
+      courseId: course2.id,
+      studentId: antonStudent.id,
+      tutorId: tutor.id,
+      status: 'ACTIVE',
+      paymentStatus: 'PAID',
+      paymentMethod: 'CARD',
+    },
+  })
+
+  console.log('✅ Database seeded successfully!')
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Error seeding database:', e);
-    process.exit(1);
+    console.error('❌ Error seeding database:', e)
+    process.exit(1)
   })
   .finally(async () => {
-    await prisma.$disconnect();
-  });
+    await prisma.$disconnect()
+  })

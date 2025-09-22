@@ -1,0 +1,10 @@
+[33mceadc20[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Fix missing favicon files and manifest errors
+[33m0d96fc4[m[33m ([m[1;31morigin/main[m[33m)[m Deploy original website from public directory
+[33m53c05b3[m Fix Vercel deployment configuration and add missing favicon
+[33m3d5b0d7[m Deploy original functional website with proper assets
+[33mb01aeeb[m Add package.json and vercel.json for static site deployment
+[33md903089[m Add plugin disable configuration to netlify.toml
+[33me6d27bc[m Simplify to pure static HTML site without Next.js plugin dependencies
+[33mef5ecbd[m Add standalone directory structure for Next.js plugin compatibility
+[33m08a9287[m Add complete Next.js build manifests and config files for plugin compatibility
+[33m5052ecf[m Fix dependency issues by isolating static site build process

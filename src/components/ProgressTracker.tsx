@@ -175,7 +175,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">
-                {progress.achievements.length}
+                {progress.achievements?.length || 0}
               </div>
               <div className="text-sm text-slate-600">Achievements</div>
             </div>
@@ -222,7 +222,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
       </Card>
 
       {/* Achievements */}
-      {progress.achievements.length > 0 && (
+      {progress.achievements && progress.achievements.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -260,7 +260,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
       )}
 
       {/* Weekly Progress Chart */}
-      {progress.weeklyProgress.length > 0 && (
+      {progress.weeklyProgress && progress.weeklyProgress.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">

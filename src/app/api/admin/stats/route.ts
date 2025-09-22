@@ -5,13 +5,17 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔍 Admin stats API called');
     const session = await getServerSession(authOptions);
+    console.log('🔍 Session:', session ? 'exists' : 'null');
+    console.log('🔍 User:', session?.user ? `${session.user.name} (${session.user.role})` : 'null');
     
     if (!session || !session.user) {
+      console.log('❌ No session or user found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (session.user.role !== 'ADMIN') {
+    if (!['ADMIN', 'OWNER', 'MANAGER'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

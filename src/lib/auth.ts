@@ -1,6 +1,14 @@
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { NextAuthOptions } from "next-auth";
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+// Helper function to check if user has admin or manager privileges
+export const isAdminOrManager = (role: string) => {
+  return role === 'ADMIN' || role === 'MANAGER';
+};
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -17,60 +25,94 @@ export const authOptions: NextAuthOptions = {
 
         console.log("🔍 NextAuth authorize called for:", credentials.email);
 
-        // Mock authentication for testing (bypass database)
+        try {
+          // Try database authentication first
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email }
+          });
+          
+          if (user) {
+            // Check password with bcrypt
+            const isValidPassword = await bcrypt.compare(credentials.password, user.password);
+            
+            if (isValidPassword) {
+              console.log("✅ Database authentication successful for:", credentials.email);
+              return {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+              };
+            } else {
+              console.log("❌ Password validation failed for:", credentials.email);
+              return null;
+            }
+          }
+        } catch (error) {
+          console.error("❌ Database authentication error:", error);
+          console.log("🔄 Falling back to mock authentication...");
+        }
+
+        // Fallback to mock users for production/database issues
         const mockUsers = [
           {
-            id: "1",
-            email: "admin@nuet.com",
-            password: "admin123",
-            name: "Admin User",
-            role: "ADMIN"
+            id: 'admin-1',
+            email: 'admin@nuetprep.academy',
+            password: 'admin123',
+            name: 'Admin User',
+            role: 'ADMIN'
           },
           {
-            id: "2", 
-            email: "tutor@nuet.com",
-            password: "tutor123",
-            name: "Tutor User",
-            role: "TUTOR"
+            id: 'manager-1',
+            email: 'yeraltay@manager.com',
+            password: 'manager123',
+            name: 'Yeraltay Manager',
+            role: 'MANAGER'
           },
           {
-            id: "3",
-            email: "student@nuet.com", 
-            password: "student123",
-            name: "Student User",
-            role: "STUDENT"
+            id: 'manager-2',
+            email: 'asylzada@manager.com',
+            password: 'manager123',
+            name: 'Asylzada Manager',
+            role: 'MANAGER'
           },
           {
-            id: "4",
-            email: "anton.ivanova@gmail.com",
-            password: "admin123",
-            name: "Anton Ivanova",
-            role: "ADMIN"
+            id: 'tutor-1',
+            email: 'tutor@nuet.com',
+            password: 'tutor123',
+            name: 'Tutor User',
+            role: 'TUTOR'
+          },
+          {
+            id: 'student-1',
+            email: 'student@nuet.com',
+            password: 'student123',
+            name: 'Student User',
+            role: 'STUDENT'
+          },
+          {
+            id: 'student-2',
+            email: 'anton.ivanova@gmail.com',
+            password: 'student123',
+            name: 'Anton Ivanova',
+            role: 'STUDENT'
           }
         ];
 
-        // Find user in mock data
-        const user = mockUsers.find(u => u.email === credentials.email);
+        const mockUser = mockUsers.find(u => u.email === credentials.email);
         
-        if (!user) {
-          console.log("❌ User not found for:", credentials.email);
-          return null;
+        if (mockUser && mockUser.password === credentials.password) {
+          console.log("✅ Mock authentication successful for:", credentials.email);
+          return {
+            id: mockUser.id,
+            email: mockUser.email,
+            name: mockUser.name,
+            role: mockUser.role,
+          };
         }
 
-        // Simple password check (no hashing for testing)
-        if (user.password !== credentials.password) {
-          console.log("❌ Password validation failed for:", credentials.email);
-          return null;
-        }
-        
-        console.log("✅ Mock authentication successful for:", credentials.email);
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-        };
+        console.log("❌ User not found or invalid password for:", credentials.email);
+        return null;
       }
     })
   ],

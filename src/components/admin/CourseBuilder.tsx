@@ -718,7 +718,7 @@ function TopicRow({
             <div className="flex items-center space-x-2">
               <FileText className="w-4 h-4 text-blue-600" />
               <span className="text-sm text-gray-700">{test.name}</span>
-              <span className="text-xs text-gray-500">({test.questions.length} questions)</span>
+              <span className="text-xs text-gray-500">({test.questions?.length || 0} questions)</span>
             </div>
             <button
               onClick={() => onEditTest()}
@@ -737,7 +737,7 @@ function TopicRow({
             <div className="flex items-center space-x-2">
               <BookOpen className="w-4 h-4 text-green-600" />
               <span className="text-sm text-gray-700">{material.name}</span>
-              <span className="text-xs text-gray-500">({material.blocks.length} blocks)</span>
+              <span className="text-xs text-gray-500">({material.blocks?.length || 0} blocks)</span>
             </div>
             <button
               onClick={() => onEditMaterial()}

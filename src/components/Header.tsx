@@ -72,60 +72,17 @@ export default function Header() {
                     My Courses
                   </Link>
                   
-                  {/* Consolidated Learning Hub */}
-                  <div className="relative group">
-                    <button className="px-3 py-2 text-blue-100 hover:text-white hover:bg-blue-700/50 rounded-lg transition-all duration-200 font-medium flex items-center space-x-1 text-sm">
-                      <Trophy className="w-4 h-4" />
-                      <span>Learning Hub</span>
-                    </button>
-                    <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-lg shadow-xl border border-slate-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                      <div className="py-2">
-                        <Link href="/challenges" className="flex items-center space-x-3 px-4 py-3 text-slate-700 hover:bg-slate-50 transition-colors">
-                          <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                            <Trophy className="w-4 h-4 text-orange-600" />
-                          </div>
-                          <div>
-                            <div className="font-medium">Challenges</div>
-                            <div className="text-xs text-slate-500">Compete and earn points</div>
-                          </div>
-                        </Link>
-                        <Link href="/leaderboard" className="flex items-center space-x-3 px-4 py-3 text-slate-700 hover:bg-slate-50 transition-colors">
-                          <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                            <BarChart3 className="w-4 h-4 text-yellow-600" />
-                          </div>
-                          <div>
-                            <div className="font-medium">Leaderboard</div>
-                            <div className="text-xs text-slate-500">See rankings</div>
-                          </div>
-                        </Link>
-                        <Link href="/progress" className="flex items-center space-x-3 px-4 py-3 text-slate-700 hover:bg-slate-50 transition-colors">
-                          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                            <BarChart3 className="w-4 h-4 text-green-600" />
-                          </div>
-                          <div>
-                            <div className="font-medium">Progress</div>
-                            <div className="text-xs text-slate-500">Track your learning</div>
-                          </div>
-                        </Link>
-                        <Link href="/study-streak" className="flex items-center space-x-3 px-4 py-3 text-slate-700 hover:bg-slate-50 transition-colors">
-                          <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                            <Trophy className="w-4 h-4 text-purple-600" />
-                          </div>
-                          <div>
-                            <div className="font-medium">Study Streak</div>
-                            <div className="text-xs text-slate-500">Maintain consistency</div>
-                          </div>
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
+                  <Link href="/progress" className="px-3 py-2 text-blue-100 hover:text-white hover:bg-blue-700/50 rounded-lg transition-all duration-200 font-medium flex items-center space-x-1 text-sm">
+                    <BarChart3 className="w-4 h-4" />
+                    <span>Progress</span>
+                  </Link>
 
                   <Link href="/chat" className="px-3 py-2 text-blue-100 hover:text-white hover:bg-blue-700/50 rounded-lg transition-all duration-200 font-medium flex items-center space-x-1 text-sm">
                     <MessageCircle className="w-4 h-4" />
                     <span>Chat</span>
                   </Link>
                   
-                  {(session.user.role === 'OWNER' || session.user.role === 'ADMIN') && (
+                  {(session.user.role === 'OWNER' || session.user.role === 'ADMIN' || session.user.role === 'MANAGER') && (
                     <>
                       <Link href="/admin/dashboard" className="px-3 py-2 text-blue-100 hover:text-white hover:bg-blue-700/50 rounded-lg transition-all duration-200 font-medium flex items-center space-x-1 text-sm">
                         <Settings className="w-4 h-4" />

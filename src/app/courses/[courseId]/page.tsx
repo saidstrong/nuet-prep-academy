@@ -108,16 +108,70 @@ export default function CourseDetailPage() {
     setShowEnrollmentFlow(true);
   };
 
-  const handleEnrollmentComplete = (enrollmentData: any) => {
-    console.log('Enrollment completed:', enrollmentData);
-    setShowEnrollmentFlow(false);
-    setIsEnrolled(true);
-    
-    // Show success message
-    alert('Enrollment successful! You can now access the course content.');
-    
-    // Switch to content tab to show the course materials
-    setActiveTab('content');
+  const handleEnrollmentComplete = async (enrollmentData: any) => {
+    try {
+      console.log('Processing enrollment:', enrollmentData);
+      
+      // Create enrollment in database
+      const enrollmentResponse = await fetch('/api/enrollments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          courseId: enrollmentData.courseId,
+          tutorId: enrollmentData.tutorId,
+          paymentMethod: enrollmentData.paymentMethod,
+          contactInfo: enrollmentData.contactInfo
+        })
+      });
+
+      if (!enrollmentResponse.ok) {
+        const errorData = await enrollmentResponse.json();
+        throw new Error(errorData.message || 'Failed to create enrollment');
+      }
+
+      const enrollmentResult = await enrollmentResponse.json();
+      console.log('Enrollment created:', enrollmentResult);
+
+      // If payment method is not "CONTACT_MANAGER", process payment
+      if (enrollmentData.paymentMethod !== 'CONTACT_MANAGER') {
+        const paymentResponse = await fetch('/api/payments', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            enrollmentId: enrollmentResult.enrollment.id,
+            paymentMethod: enrollmentData.paymentMethod,
+            amount: course?.price || 0
+          })
+        });
+
+        if (!paymentResponse.ok) {
+          const errorData = await paymentResponse.json();
+          throw new Error(errorData.message || 'Payment failed');
+        }
+
+        const paymentResult = await paymentResponse.json();
+        console.log('Payment processed:', paymentResult);
+      }
+
+      setShowEnrollmentFlow(false);
+      setIsEnrolled(true);
+      
+      // Show success message
+      alert('Enrollment successful! You can now access the course content.');
+      
+      // Switch to content tab to show the course materials
+      setActiveTab('content');
+      
+    } catch (error) {
+      console.error('Enrollment error:', error);
+      alert(`Enrollment failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   const handleToggleFavorite = async () => {
@@ -405,7 +459,7 @@ export default function CourseDetailPage() {
                 <div className="text-sm text-gray-500">{course.duration}</div>
               </div>
 
-              {session?.user.role === 'ADMIN' ? (
+              {(session?.user.role === 'ADMIN' || session?.user.role === 'MANAGER') ? (
                 <div className="space-y-3">
                   <button
                     onClick={() => router.push(`/admin/courses/${courseId}/content`)}

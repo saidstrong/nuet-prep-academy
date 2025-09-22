@@ -15,8 +15,100 @@ export async function GET(
 
     const { chatId } = params;
 
-    // Mock data - replace with actual database queries
-    const messages = [
+    console.log('🔍 Fetching messages for chatId:', chatId, 'userId:', session.user.id);
+
+    try {
+      // Try to fetch from database first
+      const { prisma } = await import('@/lib/prisma');
+      
+      // Check if user is a participant in this chat
+      let chatParticipant = await prisma.chatParticipant.findFirst({
+        where: {
+          chatId: chatId,
+          userId: session.user.id,
+        },
+      });
+
+      // If not found, create the participant (this handles the case where chat exists but user isn't added yet)
+      if (!chatParticipant) {
+        console.log('🔧 Creating chat participant for user in messages API');
+        
+        // First, ensure the user exists in the database
+        let user = await prisma.user.findUnique({
+          where: { email: session.user.email }
+        });
+        
+        if (!user) {
+          console.log('🔧 User not found in database, creating user:', session.user);
+          user = await prisma.user.create({
+            data: {
+              id: session.user.id,
+              name: session.user.name,
+              email: session.user.email,
+              password: 'mock-password', // This is a mock user
+              role: session.user.role,
+            },
+          });
+        } else {
+          console.log('✅ User found in database:', user);
+        }
+        
+        // Use the actual user ID from the database
+        const actualUserId = user.id;
+        console.log('🔧 Using user ID from database:', actualUserId);
+        
+        chatParticipant = await prisma.chatParticipant.create({
+          data: {
+            chatId: chatId,
+            userId: actualUserId,
+            isAdmin: false,
+          },
+        });
+        console.log('✅ Chat participant created:', chatParticipant);
+      } else {
+        console.log('✅ Chat participant found:', chatParticipant);
+      }
+
+      const dbMessages = await prisma.message.findMany({
+        where: {
+          chatId: chatId,
+        },
+        include: {
+          sender: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'asc'
+        }
+      });
+
+      const messages = dbMessages.map(message => ({
+        id: message.id,
+        content: message.content,
+        senderId: message.sender.id,
+        senderName: message.sender.name,
+        senderAvatar: undefined,
+        timestamp: message.createdAt.toISOString(),
+        type: message.type.toLowerCase(),
+        reactions: {}, // TODO: Implement reactions
+        isEdited: false,
+        isDeleted: false,
+        attachments: []
+      }));
+
+      console.log(`✅ Found ${messages.length} messages from database`);
+      return NextResponse.json({ messages });
+
+    } catch (dbError: any) {
+      console.log('❌ Database error, using mock messages:', dbError.message);
+      
+      // Fallback to mock data
+      const messages = [
       {
         id: '1',
         content: 'Hey, how are you doing?',
@@ -139,9 +231,10 @@ export async function GET(
         isDeleted: false,
         attachments: []
       }
-    ];
+      ];
 
-    return NextResponse.json({ messages });
+      return NextResponse.json({ messages });
+    }
   } catch (error) {
     console.error('Error fetching messages:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

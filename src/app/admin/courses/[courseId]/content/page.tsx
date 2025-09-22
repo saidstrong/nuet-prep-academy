@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { isAdminOrManager } from '@/lib/auth';
 import {
   Plus, BookOpen, Users, Clock, Target, Edit2, Trash2, Eye,
   ChevronRight, ChevronDown, Search, Filter, Star, PlayCircle, 
@@ -377,7 +378,7 @@ export default function CourseContentPage({ params }: { params: { courseId: stri
   };
 
   useEffect(() => {
-    if (session?.user?.role === 'ADMIN') {
+    if (session?.user?.role && isAdminOrManager(session.user.role)) {
       fetchData();
     }
   }, [session, params.courseId]);
@@ -547,7 +548,7 @@ export default function CourseContentPage({ params }: { params: { courseId: stri
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Topics</p>
-                  <p className="text-2xl font-bold text-gray-900">{topics.length}</p>
+                  <p className="text-2xl font-bold text-gray-900">{topics?.length || 0}</p>
                 </div>
               </div>
             </div>
@@ -558,7 +559,7 @@ export default function CourseContentPage({ params }: { params: { courseId: stri
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Materials</p>
-                  <p className="text-2xl font-bold text-gray-900">{materials.length}</p>
+                  <p className="text-2xl font-bold text-gray-900">{materials?.length || 0}</p>
                 </div>
               </div>
             </div>
@@ -569,7 +570,7 @@ export default function CourseContentPage({ params }: { params: { courseId: stri
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Tests</p>
-                  <p className="text-2xl font-bold text-gray-900">{tests.length}</p>
+                  <p className="text-2xl font-bold text-gray-900">{tests?.length || 0}</p>
                 </div>
               </div>
             </div>

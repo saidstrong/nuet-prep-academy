@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,130 +10,241 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Mock data - replace with actual database queries
-    const chats = [
-      {
-        id: '1',
-        name: 'John Doe',
-        type: 'direct',
-        participants: [
-          {
-            id: session.user.id,
-            name: session.user.name,
-            avatar: (session.user as any).image,
-            role: 'user',
-            status: 'online',
-            lastSeen: new Date().toISOString()
-          },
-          {
-            id: '2',
-            name: 'John Doe',
-            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face',
-            role: 'user',
-            status: 'online',
-            lastSeen: new Date().toISOString()
-          }
-        ],
-        lastMessage: {
-          id: '1',
-          content: 'Hey, how are you doing?',
-          senderId: '2',
-          senderName: 'John Doe',
-          timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-          type: 'text'
-        },
-        unreadCount: 2,
-        isPinned: false,
-        isMuted: false,
-        isArchived: false,
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-        updatedAt: new Date(Date.now() - 1000 * 60 * 5).toISOString()
-      },
-      {
-        id: '2',
-        name: 'NUET Prep Study Group',
-        type: 'group',
-        participants: [
-          {
-            id: session.user.id,
-            name: session.user.name,
-            avatar: (session.user as any).image,
-            role: 'admin',
-            status: 'online',
-            lastSeen: new Date().toISOString()
-          },
-          {
-            id: '3',
-            name: 'Alice Smith',
-            avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=32&h=32&fit=crop&crop=face',
-            role: 'member',
-            status: 'online',
-            lastSeen: new Date().toISOString()
-          },
-          {
-            id: '4',
-            name: 'Bob Johnson',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face',
-            role: 'member',
-            status: 'away',
-            lastSeen: new Date(Date.now() - 1000 * 60 * 30).toISOString()
-          }
-        ],
-        lastMessage: {
-          id: '2',
-          content: 'Great job on the practice test!',
-          senderId: '3',
-          senderName: 'Alice Smith',
-          timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-          type: 'text'
-        },
-        unreadCount: 0,
-        isPinned: true,
-        isMuted: false,
-        isArchived: false,
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
-        updatedAt: new Date(Date.now() - 1000 * 60 * 15).toISOString()
-      },
-      {
-        id: '3',
-        name: 'Course Support',
-        type: 'support',
-        participants: [
-          {
-            id: session.user.id,
-            name: session.user.name,
-            avatar: (session.user as any).image,
-            role: 'user',
-            status: 'online',
-            lastSeen: new Date().toISOString()
-          },
-          {
-            id: '5',
-            name: 'Support Team',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face',
-            role: 'support',
-            status: 'online',
-            lastSeen: new Date().toISOString()
-          }
-        ],
-        lastMessage: {
-          id: '3',
-          content: 'Your issue has been resolved. Please check your account.',
-          senderId: '5',
-          senderName: 'Support Team',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-          type: 'text'
-        },
-        unreadCount: 0,
-        isPinned: false,
-        isMuted: false,
-        isArchived: false,
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
-        updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString()
-      }
-    ];
+    console.log('🔍 Fetching chats for user:', session.user.id, session.user.name, session.user.role);
 
-    return NextResponse.json({ chats });
+    try {
+      // Try to fetch from database first
+      const { prisma } = await import('@/lib/prisma');
+      
+      const userChats = await prisma.chat.findMany({
+        where: {
+          participants: {
+            some: {
+              userId: session.user.id
+            }
+          }
+        },
+        include: {
+          participants: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  role: true
+                }
+              }
+            }
+          },
+          messages: {
+            orderBy: {
+              createdAt: 'desc'
+            },
+            take: 1,
+            include: {
+              sender: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true
+                }
+              }
+            }
+          }
+        },
+        orderBy: {
+          updatedAt: 'desc'
+        }
+      });
+
+      const chats = userChats.map(chat => ({
+        id: chat.id,
+        name: chat.name,
+        type: chat.type.toLowerCase(),
+        participants: chat.participants.map(p => ({
+          id: p.user.id,
+          name: p.user.name,
+          avatar: undefined,
+          role: p.user.role, // Keep original case
+          status: 'online', // Mock status
+          lastSeen: new Date().toISOString()
+        })),
+        lastMessage: chat.messages[0] ? {
+          id: chat.messages[0].id,
+          content: chat.messages[0].content,
+          senderId: chat.messages[0].sender.id,
+          senderName: chat.messages[0].sender.name,
+          senderAvatar: undefined,
+          timestamp: chat.messages[0].createdAt.toISOString(),
+          type: chat.messages[0].type.toLowerCase(),
+          reactions: {},
+          isEdited: false,
+          isDeleted: false,
+          attachments: []
+        } : null,
+          unreadCount: Math.floor(Math.random() * 5), // Mock unread count for testing
+        isPinned: false,
+        isMuted: false,
+        isArchived: false,
+        createdAt: chat.createdAt.toISOString(),
+        updatedAt: chat.updatedAt.toISOString()
+      }));
+
+      console.log(`✅ Found ${chats.length} chats from database`);
+      
+      // If no chats exist, create a default one
+      if (chats.length === 0) {
+        console.log('🔧 No chats found, creating default chat...');
+        
+        // Create a default chat
+        const defaultChat = await prisma.chat.create({
+          data: {
+            id: '1',
+            name: 'General Discussion',
+            type: 'GROUP',
+          },
+        });
+        
+        // First, ensure the user exists in the database
+        let user = await prisma.user.findUnique({
+          where: { email: session.user.email }
+        });
+        
+        if (!user) {
+          console.log('🔧 User not found in database, creating user:', session.user);
+          user = await prisma.user.create({
+            data: {
+              id: session.user.id,
+              name: session.user.name,
+              email: session.user.email,
+              password: 'mock-password', // This is a mock user
+              role: session.user.role,
+            },
+          });
+        } else {
+          console.log('✅ User found in database:', user);
+        }
+        
+        // Use the actual user ID from the database
+        const actualUserId = user.id;
+        console.log('🔧 Using user ID from database:', actualUserId);
+        
+        // Add current user as participant
+        await prisma.chatParticipant.create({
+          data: {
+            chatId: defaultChat.id,
+            userId: actualUserId,
+            isAdmin: true,
+          },
+        });
+        
+        // Create a welcome message
+        await prisma.message.create({
+          data: {
+            chatId: defaultChat.id,
+            senderId: actualUserId,
+            content: 'Welcome to the NUET Prep Academy chat!',
+            type: 'TEXT',
+            // Note: reactions, isEdited, isDeleted fields will be added when database is migrated
+          },
+        });
+        
+        console.log('✅ Default chat created successfully');
+        
+        // Return the newly created chat
+        return NextResponse.json({ 
+          chats: [{
+            id: defaultChat.id,
+            name: defaultChat.name,
+            type: defaultChat.type.toLowerCase(),
+            participants: [{
+              id: session.user.id,
+              name: session.user.name,
+              avatar: undefined,
+              role: session.user.role,
+              status: 'online',
+              lastSeen: new Date().toISOString()
+            }],
+            lastMessage: {
+              id: 'welcome-1',
+              content: 'Welcome to the NUET Prep Academy chat!',
+              senderId: session.user.id,
+              senderName: session.user.name,
+              senderAvatar: undefined,
+              timestamp: new Date().toISOString(),
+              type: 'text',
+              reactions: {},
+              isEdited: false,
+              isDeleted: false,
+              attachments: []
+            },
+            unreadCount: 0,
+            isPinned: true,
+            isMuted: false,
+            isArchived: false,
+            createdAt: defaultChat.createdAt.toISOString(),
+            updatedAt: defaultChat.updatedAt.toISOString()
+          }]
+        });
+      }
+      
+      return NextResponse.json({ chats });
+
+    } catch (dbError: any) {
+      console.log('❌ Database error, using mock chats:', dbError.message);
+      console.log('❌ Full database error:', dbError);
+      
+      // Fallback to mock data
+      const chats = [
+        {
+          id: '1',
+          name: 'General Discussion',
+          type: 'group',
+          participants: [
+            {
+              id: session.user.id,
+              name: session.user.name,
+              avatar: undefined,
+              role: session.user.role, // Use actual user role
+              status: 'online',
+              lastSeen: new Date().toISOString()
+            },
+            {
+              id: '2',
+              name: 'Jane Smith',
+              avatar: undefined,
+              role: 'STUDENT',
+              status: 'offline',
+              lastSeen: new Date(Date.now() - 300000).toISOString()
+            }
+          ],
+          lastMessage: {
+            id: '1',
+            content: 'Hello everyone! How is everyone doing?',
+            senderId: session.user.id,
+            senderName: session.user.name,
+            senderAvatar: undefined,
+            timestamp: new Date(Date.now() - 60000).toISOString(),
+            type: 'text',
+            reactions: { '👍': ['2'] },
+            isEdited: false,
+            isDeleted: false,
+            attachments: []
+          },
+          unreadCount: 0,
+          isPinned: true,
+          isMuted: false,
+          isArchived: false,
+          createdAt: new Date(Date.now() - 86400000).toISOString(),
+          updatedAt: new Date(Date.now() - 60000).toISOString()
+        }
+      ];
+
+      console.log(`✅ Using ${chats.length} mock chats`);
+      console.log('📋 Mock chats data:', chats);
+      return NextResponse.json({ chats });
+    }
   } catch (error) {
     console.error('Error fetching chats:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

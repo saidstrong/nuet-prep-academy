@@ -120,6 +120,20 @@ export default function EnhancedChatInterface() {
     fetchChats();
   }, []);
 
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showEmojiPicker && !(event.target as Element).closest('.emoji-picker')) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showEmojiPicker]);
+
   useEffect(() => {
     if (selectedChat) {
       fetchMessages(selectedChat.id);
@@ -132,35 +146,61 @@ export default function EnhancedChatInterface() {
 
   const fetchChats = async () => {
     try {
+      console.log('🔍 Fetching chats...');
       const response = await fetch('/api/chat/chats', { credentials: 'include' });
+      console.log('📡 Chats response status:', response.status);
+      console.log('📡 Chats response ok:', response.ok);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('💬 Chats data received:', data);
         setChats(data.chats || []);
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Error fetching chats:', errorData);
       }
     } catch (error) {
-      console.error('Error fetching chats:', error);
+      console.error('❌ Network error fetching chats:', error);
     }
   };
 
   const fetchMessages = async (chatId: string) => {
     try {
+      console.log('🔍 Fetching messages for chat:', chatId);
       const response = await fetch(`/api/chat/messages/${chatId}`, { credentials: 'include' });
+      console.log('📡 Messages response status:', response.status);
+      console.log('📡 Messages response ok:', response.ok);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('💬 Messages data received:', data);
+        console.log('💬 Messages array:', data.messages);
+        console.log('💬 Messages count:', data.messages?.length || 0);
         setMessages(data.messages || []);
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Error fetching messages:', errorData);
       }
     } catch (error) {
-      console.error('Error fetching messages:', error);
+      console.error('❌ Network error fetching messages:', error);
     }
   };
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedChat) return;
 
+    // If editing a message, use edit function instead
+    if (editMessage) {
+      await handleEditSubmit();
+      return;
+    }
+
     try {
+      console.log('🔍 Sending message:', newMessage, 'to chat:', selectedChat.id);
       const response = await fetch('/api/chat/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           chatId: selectedChat.id,
           content: newMessage,
@@ -169,14 +209,40 @@ export default function EnhancedChatInterface() {
         })
       });
 
+      console.log('📡 Send response status:', response.status);
+      console.log('📡 Send response ok:', response.ok);
+
       if (response.ok) {
+        console.log('✅ Message sent successfully');
+        const responseData = await response.json();
+        console.log('📨 Message response:', responseData);
+        
+        // Clear input and reply state
         setNewMessage('');
         setReplyMessage(null);
         setShowReplyMessage(false);
-        fetchMessages(selectedChat.id);
+        
+        // Add the new message to local state immediately for better UX
+        if (responseData.message) {
+          console.log('📝 Adding message to local state:', responseData.message);
+          setMessages(prev => {
+            const newMessages = [...prev, responseData.message];
+            console.log('📝 Updated messages array:', newMessages);
+            return newMessages;
+          });
+        } else {
+          console.log('⚠️ No message data in response, fetching messages...');
+          // If no message data, fetch messages to get the latest
+          fetchMessages(selectedChat.id);
+        }
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Error sending message:', errorData);
+        alert(`Failed to send message: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('❌ Network error sending message:', error);
+      alert(`Network error: ${error instanceof Error ? error.message : 'Please try again.'}`);
     }
   };
 
@@ -209,9 +275,93 @@ export default function EnhancedChatInterface() {
     setShowAttachmentMenu(false);
   };
 
-  const handleReaction = (messageId: string, emoji: string) => {
-    // Handle message reaction
-    console.log('Reacting to message:', messageId, 'with emoji:', emoji);
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>, fileType: string) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedChat) return;
+
+    try {
+      // Upload file first
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', fileType);
+
+      const uploadResponse = await fetch('/api/upload/file', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload file');
+      }
+
+      const uploadResult = await uploadResponse.json();
+
+      // Send message with file attachment
+      const response = await fetch('/api/chat/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatId: selectedChat.id,
+          content: `📎 ${file.name}`,
+          type: fileType,
+          attachments: [{
+            id: Date.now().toString(),
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            url: uploadResult.url
+          }]
+        })
+      });
+
+      if (response.ok) {
+        fetchMessages(selectedChat.id);
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+    }
+  };
+
+  const handleReaction = async (messageId: string, emoji: string) => {
+    try {
+      console.log('🔍 Adding reaction:', messageId, emoji);
+      const response = await fetch('/api/chat/reactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          messageId: messageId,
+          emoji: emoji,
+          action: 'add'
+        })
+      });
+
+      console.log('📡 Reaction response status:', response.status);
+      console.log('📡 Reaction response ok:', response.ok);
+
+      if (response.ok) {
+        console.log('✅ Reaction added successfully');
+        // Update local message reactions
+        setMessages(prev => prev.map(msg => 
+          msg.id === messageId 
+            ? {
+                ...msg,
+                reactions: {
+                  ...msg.reactions,
+                  [emoji]: [...(msg.reactions?.[emoji] || []), session?.user.id || '']
+                }
+              }
+            : msg
+        ));
+        setShowReactions(false);
+        setReactionMessage(null);
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Error adding reaction:', errorData);
+      }
+    } catch (error) {
+      console.error('❌ Network error adding reaction:', error);
+    }
   };
 
   const handleReply = (message: Message) => {
@@ -225,15 +375,91 @@ export default function EnhancedChatInterface() {
     setNewMessage(message.content);
   };
 
+  const handleEditSubmit = async () => {
+    if (!editMessage || !newMessage.trim()) return;
+
+    try {
+      console.log('🔍 Editing message:', editMessage.id, 'New content:', newMessage);
+      const response = await fetch(`/api/chat/message/${editMessage.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          content: newMessage
+        })
+      });
+
+      console.log('📡 Edit response status:', response.status);
+      console.log('📡 Edit response ok:', response.ok);
+
+      if (response.ok) {
+        console.log('✅ Message edited successfully');
+        // Update local message
+        setMessages(prev => prev.map(msg => 
+          msg.id === editMessage.id 
+            ? { ...msg, content: newMessage, isEdited: true }
+            : msg
+        ));
+        setShowEditMessage(false);
+        setEditMessage(null);
+        setNewMessage('');
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Error editing message:', errorData);
+      }
+    } catch (error) {
+      console.error('❌ Network error editing message:', error);
+    }
+  };
+
   const handleForward = (message: Message) => {
     setForwardMessage(message);
     setShowForwardMessage(true);
   };
 
-  const handleDelete = (messageId: string) => {
-    if (confirm('Are you sure you want to delete this message?')) {
-      // Handle message deletion
-      console.log('Deleting message:', messageId);
+  const handleForwardSubmit = async (targetChatId: string) => {
+    if (!forwardMessage) return;
+
+    try {
+      const response = await fetch('/api/chat/forward', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messageId: forwardMessage.id,
+          targetChatId: targetChatId,
+          content: `Forwarded: ${forwardMessage.content}`
+        })
+      });
+
+      if (response.ok) {
+        setShowForwardMessage(false);
+        setForwardMessage(null);
+        // Refresh messages if forwarding to current chat
+        if (targetChatId === selectedChat?.id) {
+          fetchMessages(targetChatId);
+        }
+      }
+    } catch (error) {
+      console.error('Error forwarding message:', error);
+    }
+  };
+
+  const handleDelete = async (messageId: string) => {
+    if (!confirm('Are you sure you want to delete this message?')) return;
+
+    try {
+      const response = await fetch(`/api/chat/message/${messageId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        // Remove message from local state
+        setMessages(prev => prev.filter(msg => msg.id !== messageId));
+        setShowMessageOptions(false);
+        setMessageOptions(null);
+      }
+    } catch (error) {
+      console.error('Error deleting message:', error);
     }
   };
 
@@ -304,6 +530,28 @@ export default function EnhancedChatInterface() {
     chat.lastMessage?.content.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const selectChat = async (chat: Chat) => {
+    setSelectedChat(chat);
+    fetchMessages(chat.id);
+    
+    // Mark messages as read when opening chat
+    try {
+      await fetch('/api/chat/mark-read', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ chatId: chat.id })
+      });
+      
+      // Refresh chats to update unread count
+      fetchChats();
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
@@ -373,7 +621,7 @@ export default function EnhancedChatInterface() {
               {filteredChats.map((chat) => (
                 <div
                   key={chat.id}
-                  onClick={() => setSelectedChat(chat)}
+                  onClick={() => selectChat(chat)}
                   className={`p-3 rounded-lg cursor-pointer hover:bg-gray-50 ${
                     selectedChat?.id === chat.id ? 'bg-blue-50 border border-blue-200' : ''
                   }`}
@@ -426,7 +674,7 @@ export default function EnhancedChatInterface() {
               {chats.filter(chat => chat.type === 'group').map((chat) => (
                 <div
                   key={chat.id}
-                  onClick={() => setSelectedChat(chat)}
+                  onClick={() => selectChat(chat)}
                   className={`p-3 rounded-lg cursor-pointer hover:bg-gray-50 ${
                     selectedChat?.id === chat.id ? 'bg-blue-50 border border-blue-200' : ''
                   }`}
@@ -459,7 +707,7 @@ export default function EnhancedChatInterface() {
               {chats.filter(chat => chat.type === 'direct').map((chat) => (
                 <div
                   key={chat.id}
-                  onClick={() => setSelectedChat(chat)}
+                  onClick={() => selectChat(chat)}
                   className={`p-3 rounded-lg cursor-pointer hover:bg-gray-50 ${
                     selectedChat?.id === chat.id ? 'bg-blue-50 border border-blue-200' : ''
                   }`}
@@ -550,13 +798,25 @@ export default function EnhancedChatInterface() {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.map((message) => (
+              {console.log('🎨 Rendering messages:', messages.length, 'messages')}
+              {console.log('🔍 Current user ID:', session?.user?.id)}
+              {console.log('🔍 Current user email:', session?.user?.email)}
+              {messages.map((message) => {
+                console.log('🔍 Message sender ID:', message.senderId, 'Current user ID:', session?.user?.id, 'Match:', message.senderId === session?.user?.id);
+                console.log('🔍 Message sender name:', message.senderName, 'Current user name:', session?.user?.name);
+                
+                // Check if this is the current user's message by ID or by name
+                const isCurrentUser = message.senderId === session?.user?.id || 
+                                    message.senderName === session?.user?.name ||
+                                    message.senderName === 'Said Amanzhol'; // Temporary fallback
+                
+                return (
                 <div
                   key={message.id}
-                  className={`flex ${message.senderId === session?.user?.id ? 'justify-end' : 'justify-start'}`}
+                  className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div className={`max-w-xs lg:max-w-md ${message.senderId === session?.user?.id ? 'order-2' : 'order-1'}`}>
-                    {message.senderId !== session?.user?.id && (
+                  <div className={`max-w-xs lg:max-w-md ${isCurrentUser ? 'order-2' : 'order-1'}`}>
+                    {!isCurrentUser && (
                       <div className="flex items-center space-x-2 mb-1">
                         <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
                           <span className="text-white text-xs font-medium">
@@ -567,8 +827,8 @@ export default function EnhancedChatInterface() {
                       </div>
                     )}
                     <div
-                      className={`p-3 rounded-lg ${
-                        message.senderId === session?.user?.id
+                      className={`p-3 rounded-lg group relative ${
+                        isCurrentUser
                           ? 'bg-blue-500 text-white'
                           : 'bg-gray-200 text-gray-900'
                       }`}
@@ -580,6 +840,9 @@ export default function EnhancedChatInterface() {
                         </div>
                       )}
                       <p className="text-sm">{message.content}</p>
+                      {message.isEdited && (
+                        <span className="text-xs opacity-70 italic">(edited)</span>
+                      )}
                       {message.attachments && message.attachments.length > 0 && (
                         <div className="mt-2 space-y-2">
                           {message.attachments.map((attachment) => (
@@ -595,11 +858,18 @@ export default function EnhancedChatInterface() {
                           {formatTime(message.timestamp)}
                         </span>
                         <div className="flex items-center space-x-1">
+                          {/* Read status for current user's messages */}
+                          {isCurrentUser && (
+                            <div className="flex items-center space-x-1">
+                              <CheckCheck className="w-3 h-3 text-blue-300" />
+                            </div>
+                          )}
                           {message.reactions && Object.keys(message.reactions).length > 0 && (
                             <div className="flex space-x-1">
                               {Object.entries(message.reactions).map(([emoji, users]) => (
                                 <button
                                   key={emoji}
+                                  onClick={() => handleReaction(message.id, emoji)}
                                   className="text-xs bg-gray-100 px-2 py-1 rounded-full hover:bg-gray-200"
                                 >
                                   {emoji} {users.length}
@@ -609,10 +879,71 @@ export default function EnhancedChatInterface() {
                           )}
                         </div>
                       </div>
+                      
+                      {/* Message Actions Menu */}
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex space-x-1">
+                          {/* Add Reaction Button */}
+                          <button
+                            onClick={() => {
+                              setReactionMessage(message);
+                              setShowReactions(true);
+                            }}
+                            className="p-1 bg-white rounded-full shadow-sm hover:bg-gray-50"
+                            title="Add reaction"
+                          >
+                            <Smile className="w-3 h-3 text-gray-600" />
+                          </button>
+                          
+                          {/* Reply Button */}
+                          <button
+                            onClick={() => handleReply(message)}
+                            className="p-1 bg-white rounded-full shadow-sm hover:bg-gray-50"
+                            title="Reply"
+                          >
+                            <Reply className="w-3 h-3 text-gray-600" />
+                          </button>
+                          
+                          {/* Edit Button (only for own messages) */}
+                          {isCurrentUser && (
+                            <button
+                              onClick={() => handleEdit(message)}
+                              className="p-1 bg-white rounded-full shadow-sm hover:bg-gray-50"
+                              title="Edit"
+                            >
+                              <Edit className="w-3 h-3 text-gray-600" />
+                            </button>
+                          )}
+                          
+                          {/* Forward Button */}
+                          <button
+                            onClick={() => handleForward(message)}
+                            className="p-1 bg-white rounded-full shadow-sm hover:bg-gray-50"
+                            title="Forward"
+                          >
+                            <Forward className="w-3 h-3 text-gray-600" />
+                          </button>
+                          
+                          {/* Delete Button (only for own messages or admins) */}
+                          {(isCurrentUser || 
+                            session?.user?.role === 'ADMIN' || 
+                            session?.user?.role === 'MANAGER' || 
+                            session?.user?.role === 'OWNER') && (
+                            <button
+                              onClick={() => handleDelete(message.id)}
+                              className="p-1 bg-white rounded-full shadow-sm hover:bg-red-50"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-3 h-3 text-red-600" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
               {isTyping && typingUsers.length > 0 && (
                 <div className="flex justify-start">
                   <div className="bg-gray-200 rounded-lg p-3">
@@ -640,6 +971,27 @@ export default function EnhancedChatInterface() {
                         setReplyMessage(null);
                       }}
                       className="text-gray-500 hover:text-gray-700"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {showEditMessage && editMessage && (
+                <div className="mb-3 p-2 bg-blue-50 rounded border-l-4 border-blue-500">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-blue-600">Editing message</p>
+                      <p className="text-sm text-blue-800">{editMessage.content}</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowEditMessage(false);
+                        setEditMessage(null);
+                        setNewMessage('');
+                      }}
+                      className="text-blue-500 hover:text-blue-700"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -704,6 +1056,26 @@ export default function EnhancedChatInterface() {
                 >
                   <Smile className="w-5 h-5" />
                 </button>
+                
+                {/* Emoji Picker */}
+                {showEmojiPicker && (
+                  <div className="emoji-picker absolute bottom-16 left-4 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10">
+                    <div className="grid grid-cols-8 gap-1">
+                      {['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏'].map((emoji) => (
+                        <button
+                          key={emoji}
+                          onClick={() => {
+                            setNewMessage(prev => prev + emoji);
+                            setShowEmojiPicker(false);
+                          }}
+                          className="p-1 text-lg hover:bg-gray-100 rounded"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <button
                   onClick={sendMessage}
                   disabled={!newMessage.trim()}
@@ -731,41 +1103,197 @@ export default function EnhancedChatInterface() {
         type="file"
         className="hidden"
         accept=".pdf,.doc,.docx,.txt,.zip,.rar"
-        onChange={(e) => {
-          // Handle file upload
-          console.log('File selected:', e.target.files?.[0]);
-        }}
+        onChange={(e) => handleFileChange(e, 'document')}
       />
       <input
         ref={imageInputRef}
         type="file"
         className="hidden"
         accept="image/*"
-        onChange={(e) => {
-          // Handle image upload
-          console.log('Image selected:', e.target.files?.[0]);
-        }}
+        onChange={(e) => handleFileChange(e, 'image')}
       />
       <input
         ref={audioInputRef}
         type="file"
         className="hidden"
         accept="audio/*"
-        onChange={(e) => {
-          // Handle audio upload
-          console.log('Audio selected:', e.target.files?.[0]);
-        }}
+        onChange={(e) => handleFileChange(e, 'audio')}
       />
       <input
         ref={videoInputRef}
         type="file"
         className="hidden"
         accept="video/*"
-        onChange={(e) => {
-          // Handle video upload
-          console.log('Video selected:', e.target.files?.[0]);
-        }}
+        onChange={(e) => handleFileChange(e, 'video')}
       />
+
+      {/* Reactions Picker Modal */}
+      {showReactions && reactionMessage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Add Reaction</h3>
+              <button
+                onClick={() => {
+                  setShowReactions(false);
+                  setReactionMessage(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="grid grid-cols-6 gap-2">
+              {['👍', '❤️', '😂', '😮', '😢', '😡', '🎉', '👏', '🔥', '💯', '⭐', '🚀'].map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => handleReaction(reactionMessage.id, emoji)}
+                  className="p-2 text-2xl hover:bg-gray-100 rounded-lg"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Forward Message Modal */}
+      {showForwardMessage && forwardMessage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Forward Message</h3>
+              <button
+                onClick={() => {
+                  setShowForwardMessage(false);
+                  setForwardMessage(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="mb-4 p-3 bg-gray-100 rounded-lg">
+              <p className="text-sm text-gray-600 mb-1">Original message:</p>
+              <p className="text-sm">{forwardMessage.content}</p>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select chat to forward to:
+              </label>
+              <div className="max-h-40 overflow-y-auto space-y-2">
+                {chats.filter(chat => chat.id !== selectedChat?.id).map((chat) => (
+                  <button
+                    key={chat.id}
+                    onClick={() => handleForwardSubmit(chat.id)}
+                    className="w-full p-2 text-left hover:bg-gray-100 rounded-lg border"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs font-medium">
+                          {chat.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{chat.name}</p>
+                        <p className="text-xs text-gray-500">{chat.participants.length} members</p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Group Info Modal */}
+      {showGroupInfo && selectedChat && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Group Information</h3>
+              <button
+                onClick={() => setShowGroupInfo(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {/* Group Header */}
+            <div className="flex items-center space-x-4 mb-6">
+              <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
+                <Users className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h4 className="text-xl font-medium text-gray-900">{selectedChat.name}</h4>
+                <p className="text-sm text-gray-600">{selectedChat.participants.length} members</p>
+                <p className="text-xs text-gray-500">Created {new Date(selectedChat.createdAt).toLocaleDateString()}</p>
+              </div>
+            </div>
+
+            {/* Group Description */}
+            <div className="mb-6">
+              <h5 className="text-sm font-medium text-gray-900 mb-2">Description</h5>
+              <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                {selectedChat.name === 'General Discussion' 
+                  ? 'Welcome to the NUET Prep Academy general discussion group. This is where students and tutors can discuss course materials, ask questions, and share resources.'
+                  : 'Group discussion area for course-related topics and general communication.'
+                }
+              </p>
+            </div>
+
+            {/* Members List */}
+            <div className="mb-6">
+              <h5 className="text-sm font-medium text-gray-900 mb-3">Members ({selectedChat.participants.length})</h5>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {selectedChat.participants.map((participant) => (
+                  <div
+                    key={participant.id}
+                    className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
+                    onClick={() => {
+                      // Show user profile
+                      alert(`Profile: ${participant.name}\nRole: ${participant.role}\nStatus: ${participant.status}`);
+                    }}
+                  >
+                    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-sm font-medium">
+                        {participant.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">{participant.name}</p>
+                      <p className="text-xs text-gray-500 capitalize">{participant.role}</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className={`w-2 h-2 rounded-full ${
+                        participant.status === 'online' ? 'bg-green-500' : 'bg-gray-400'
+                      }`}></div>
+                      <span className="text-xs text-gray-500 capitalize">{participant.status}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Group Actions */}
+            <div className="border-t pt-4">
+              <div className="flex space-x-2">
+                <button className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                  <Phone className="w-4 h-4 inline mr-2" />
+                  Start Call
+                </button>
+                <button className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                  <Video className="w-4 h-4 inline mr-2" />
+                  Video Call
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

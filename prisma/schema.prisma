@@ -1,4 +1,4 @@
-// This is your Prisma schema file,
+// This is your Prisma schema file for SQLite
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
@@ -13,8 +13,15 @@ datasource db {
 enum UserRole {
   OWNER
   ADMIN
+  MANAGER
   TUTOR
   STUDENT
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
 }
 
 enum CourseStatus {
@@ -26,7 +33,6 @@ enum CourseStatus {
 
 enum EnrollmentStatus {
   PENDING
-  APPROVED
   ACTIVE
   COMPLETED
   CANCELLED
@@ -44,29 +50,19 @@ enum PaymentMethod {
   CARD
   BANK_TRANSFER
   CONTACT_MANAGER
-  MANUAL
-}
-
-enum MaterialType {
-  PDF
-  VIDEO
-  AUDIO
-  LINK
-  TEXT
-  PRESENTATION
 }
 
 enum ChatType {
   DIRECT
   GROUP
-  COURSE
 }
 
 enum MessageType {
   TEXT
   IMAGE
   FILE
-  SYSTEM
+  AUDIO
+  VIDEO
 }
 
 model User {
@@ -110,27 +106,6 @@ model User {
   courseFavorites CourseFavorite[] @relation("CourseFavorites")
   courseBookmarks CourseBookmark[] @relation("CourseBookmarks")
 
-  // Gamification relations
-  userBadges UserBadge[]
-  userAchievements UserAchievement[]
-  userPoints UserPoints?
-  pointTransactions PointTransaction[]
-  leaderboardEntries LeaderboardEntry[]
-
-  // Social and Team relations
-  socialInteractions SocialInteraction[]
-  
-  // Notifications
-  notifications Notification[]
-  receivedInteractions SocialInteraction[] @relation("InteractionReceiver")
-  teamMemberships    TeamMembership[]
-  teamInvitations    TeamInvitation[] @relation("InvitedUser")
-  sentTeamInvitations TeamInvitation[] @relation("InvitingUser")
-  eventParticipations EventParticipation[]
-  challengeSubmissions ChallengeSubmission[]
-  friendConnections  FriendConnection[] @relation("UserConnection")
-  friendOfConnections FriendConnection[] @relation("FriendConnection")
-
   @@map("users")
 }
 
@@ -153,7 +128,7 @@ model Profile {
 }
 
 model Course {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   title       String
   description String
   price       Float
@@ -161,11 +136,11 @@ model Course {
   status      CourseStatus @default(DRAFT)
   maxStudents Int
   instructor  String
-  difficulty  String
+  difficulty  CourseLevel
   estimatedHours Int
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
   // Relations
   creatorId String
@@ -234,7 +209,7 @@ model Material {
   id          String   @id @default(cuid())
   title       String
   description String?
-  type        MaterialType
+  type        String   // PDF, VIDEO, AUDIO, LINK, TEXT, PRESENTATION
   url         String?
   content     String?
   order       Int
@@ -313,12 +288,12 @@ model QuestionOption {
 }
 
 model CourseEnrollment {
-  id            String           @id @default(cuid())
+  id            String        @id @default(cuid())
   status        EnrollmentStatus @default(PENDING)
-  paymentStatus PaymentStatus    @default(PENDING)
-  paymentMethod PaymentMethod?   @default(CARD)
-  enrolledAt    DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  paymentStatus PaymentStatus @default(PENDING)
+  paymentMethod PaymentMethod? @default(CARD)
+  enrolledAt    DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   // Relations
   courseId  String
@@ -336,13 +311,13 @@ model CourseEnrollment {
 }
 
 model Payment {
-  id        String        @id @default(cuid())
+  id        String   @id @default(cuid())
   amount    Float
-  currency  String        @default("KZT")
-  status    PaymentStatus @default(PENDING)
-  paymentMethod PaymentMethod @default(CARD)
+  currency  String   @default("KZT")
+  status    String   @default("PENDING") // PENDING, PAID, FAILED, REFUNDED
+  paymentMethod String @default("CARD") // KASPI, CARD, BANK_TRANSFER, CONTACT_MANAGER, MANUAL
   transactionId String?   @unique
-  metadata  Json?
+  metadata  String?  // JSON as string
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
@@ -360,11 +335,11 @@ model Payment {
 }
 
 model Chat {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String?
   type      ChatType
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   // Relations
   courseId String?
@@ -411,7 +386,7 @@ model Message {
 
 model TestSubmission {
   id         String   @id @default(cuid())
-  answers    Json
+  answers    String   // JSON as string
   score      Int
   maxScore   Int
   timeSpent  Int      // in seconds
@@ -475,413 +450,6 @@ model MaterialProgress {
   @@map("material_progress")
 }
 
-// Gamification Models
-model Badge {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String
-  icon        String   // Icon name or URL
-  category    BadgeCategory
-  points      Int      @default(0)
-  criteria    Json     // Achievement criteria
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  userBadges UserBadge[]
-
-  @@map("badges")
-}
-
-model UserBadge {
-  id        String   @id @default(cuid())
-  earnedAt  DateTime @default(now())
-  createdAt DateTime @default(now())
-
-  // Relations
-  userId  String
-  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  badgeId String
-  badge   Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, badgeId])
-  @@map("user_badges")
-}
-
-model Achievement {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String
-  icon        String
-  category    AchievementCategory
-  points      Int      @default(0)
-  criteria    Json     // Achievement criteria
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  userAchievements UserAchievement[]
-
-  @@map("achievements")
-}
-
-model UserAchievement {
-  id        String   @id @default(cuid())
-  earnedAt  DateTime @default(now())
-  createdAt DateTime @default(now())
-
-  // Relations
-  userId  String
-  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  achievementId String
-  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, achievementId])
-  @@map("user_achievements")
-}
-
-model UserPoints {
-  id        String   @id @default(cuid())
-  points    Int      @default(0)
-  level     Int      @default(1)
-  experience Int     @default(0)
-  streak    Int      @default(0) // Daily login streak
-  lastLogin DateTime @default(now())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("user_points")
-}
-
-model PointTransaction {
-  id          String   @id @default(cuid())
-  points      Int      // Can be positive or negative
-  reason      String   // Why points were awarded/deducted
-  category    PointCategory
-  metadata    Json?    // Additional data
-  createdAt   DateTime @default(now())
-
-  // Relations
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("point_transactions")
-}
-
-model Leaderboard {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  description String?
-  category  LeaderboardCategory
-  timeFrame LeaderboardTimeFrame
-  isActive  Boolean  @default(true)
-  isTeam    Boolean  @default(false) // New field for team competitions
-  eventId   String?  // Optional link to seasonal events
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  entries LeaderboardEntry[]
-  team    Team?     @relation("TeamLeaderboard", fields: [teamId], references: [id], onDelete: Cascade)
-  teamId  String?
-
-  @@map("leaderboards")
-}
-
-model LeaderboardEntry {
-  id        String   @id @default(cuid())
-  rank      Int
-  score     Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  leaderboardId String
-  leaderboard   Leaderboard @relation(fields: [leaderboardId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, leaderboardId])
-  @@map("leaderboard_entries")
-}
-
-// Enums for Gamification
-enum BadgeCategory {
-  COURSE_COMPLETION
-  TEST_PERFORMANCE
-  STUDY_TIME
-  STREAK
-  SOCIAL
-  SPECIAL
-}
-
-enum AchievementCategory {
-  ACADEMIC
-  ENGAGEMENT
-  SOCIAL
-  MILESTONE
-  SPECIAL
-}
-
-enum PointCategory {
-  COURSE_COMPLETION
-  TEST_PERFORMANCE
-  DAILY_LOGIN
-  STREAK_BONUS
-  BADGE_EARNED
-  ACHIEVEMENT_EARNED
-  SOCIAL_INTERACTION
-  STUDY_TIME
-  BONUS
-  PENALTY
-  SEASONAL_EVENT
-  TEAM_COMPETITION
-}
-
-enum LeaderboardCategory {
-  POINTS
-  COURSE_COMPLETION
-  TEST_SCORES
-  STUDY_TIME
-  STREAK
-  OVERALL
-  SEASONAL
-  TEAM
-}
-
-enum LeaderboardTimeFrame {
-  DAILY
-  WEEKLY
-  MONTHLY
-  ALL_TIME
-  SEASONAL
-}
-
-// New enums for Social Features and Events
-enum SocialInteractionType {
-  ACHIEVEMENT_SHARE
-  BADGE_SHARE
-  COURSE_COMPLETION_SHARE
-  TEST_SCORE_SHARE
-  STUDY_TIME_SHARE
-  STREAK_SHARE
-  INVITE_FRIEND
-  JOIN_TEAM
-  LEAVE_TEAM
-}
-
-enum EventType {
-  SEASONAL_CHALLENGE
-  TIME_LIMITED_QUIZ
-  STUDY_MARATHON
-  TEAM_BATTLE
-  HOLIDAY_SPECIAL
-  WEEKEND_CHALLENGE
-}
-
-enum EventStatus {
-  UPCOMING
-  ACTIVE
-  COMPLETED
-  CANCELLED
-}
-
-enum TeamRole {
-  LEADER
-  MEMBER
-  CO_LEADER
-}
-
-enum ChallengeType {
-  INDIVIDUAL
-  TEAM
-  MIXED
-}
-
-// New models for Social Features and Events
-model SocialInteraction {
-  id        String   @id @default(cuid())
-  type      SocialInteractionType
-  content   String?  // Custom message or content
-  metadata  Json?    // Additional data (scores, achievements, etc.)
-  isPublic  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  
-  // Relations
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  receiverId String?
-  receiver   User?  @relation("InteractionReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
-  
-  @@map("social_interactions")
-}
-
-model FriendConnection {
-  id        String   @id @default(cuid())
-  status    String   @default("PENDING") // PENDING, ACCEPTED, REJECTED, BLOCKED
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Relations
-  userId String
-  user   User   @relation("UserConnection", fields: [userId], references: [id], onDelete: Cascade)
-  
-  friendId String
-  friend   User   @relation("FriendConnection", fields: [friendId], references: [id], onDelete: Cascade)
-  
-  @@unique([userId, friendId])
-  @@map("friend_connections")
-}
-
-model Team {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String?
-  logo        String?  // Logo URL
-  maxMembers  Int      @default(10)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relations
-  members     TeamMembership[]
-  invitations TeamInvitation[]
-  leaderboards Leaderboard[] @relation("TeamLeaderboard")
-  eventParticipations EventParticipation[] @relation("TeamEvent")
-  
-  @@map("teams")
-}
-
-model TeamMembership {
-  id        String   @id @default(cuid())
-  role      TeamRole @default(MEMBER)
-  joinedAt  DateTime @default(now())
-  
-  // Relations
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  teamId String
-  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  
-  @@unique([userId, teamId])
-  @@map("team_memberships")
-}
-
-model TeamInvitation {
-  id        String   @id @default(cuid())
-  message   String?  // Custom invitation message
-  status    String   @default("PENDING") // PENDING, ACCEPTED, REJECTED, EXPIRED
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  
-  // Relations
-  invitingUserId String
-  invitingUser   User   @relation("InvitingUser", fields: [invitingUserId], references: [id], onDelete: Cascade)
-  
-  invitedUserId String
-  invitedUser   User   @relation("InvitedUser", fields: [invitedUserId], references: [id], onDelete: Cascade)
-  
-  teamId String
-  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  
-  @@unique([invitedUserId, teamId])
-  @@map("team_invitations")
-}
-
-model Event {
-  id          String   @id @default(cuid())
-  name        String
-  description String
-  type        EventType
-  status      EventStatus @default(UPCOMING)
-  startDate   DateTime
-  endDate     DateTime
-  rules       Json?    // Event rules and requirements
-  rewards     Json?    // Rewards structure
-  maxParticipants Int?  // Optional limit
-  isTeamEvent Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relations
-  participations EventParticipation[]
-  challenges     Challenge[]
-  
-  @@map("events")
-}
-
-model EventParticipation {
-  id        String   @id @default(cuid())
-  joinedAt  DateTime @default(now())
-  score     Int      @default(0)
-  rank      Int?
-  
-  // Relations
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  eventId String
-  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  
-  teamId String?
-  team   Team?  @relation("TeamEvent", fields: [teamId], references: [id], onDelete: Cascade)
-  
-  @@unique([userId, eventId])
-  @@map("event_participations")
-}
-
-model Challenge {
-  id          String   @id @default(cuid())
-  name        String
-  description String
-  type        ChallengeType
-  startDate   DateTime
-  endDate     DateTime
-  rules       Json?    // Challenge rules
-  rewards     Json?    // Reward structure
-  maxParticipants Int?
-  hasQuiz     Boolean  @default(false)
-  quiz        Json?    // Quiz questions and configuration
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relations
-  eventId String?
-  event   Event? @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  
-  submissions ChallengeSubmission[]
-  
-  @@map("challenges")
-}
-
-model ChallengeSubmission {
-  id        String   @id @default(cuid())
-  content   String  // Submission content or answer
-  score     Int?
-  submittedAt DateTime @default(now())
-  
-  // Relations
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  challengeId String
-  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-  
-  @@map("challenge_submissions")
-}
-
 model CourseFavorite {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
@@ -910,28 +478,4 @@ model CourseBookmark {
   
   @@unique([studentId, courseId])
   @@map("course_bookmarks")
-}
-
-enum NotificationType {
-  ENROLLMENT_REQUEST
-  COURSE_UPDATE
-  PAYMENT_CONFIRMATION
-  SYSTEM_ANNOUNCEMENT
-}
-
-model Notification {
-  id        String   @id @default(cuid())
-  type      NotificationType
-  title     String
-  message   String
-  data      String?  // JSON data for additional information
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Relations
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@map("notifications")
 }

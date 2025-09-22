@@ -191,6 +191,13 @@ export default function CourseManagement() {
   const fetchData = async () => {
     try {
       setLoading(true);
+      
+      // Initialize all states with empty arrays to prevent undefined errors
+      setCourses([]);
+      setTopics([]);
+      setSubtopics([]);
+      setTests([]);
+      
       const [coursesRes, topicsRes, subtopicsRes, testsRes] = await Promise.all([
         fetch('/api/admin/courses'),
         fetch('/api/admin/courses/topics'),
@@ -200,12 +207,15 @@ export default function CourseManagement() {
 
       if (coursesRes.ok) {
         const data = await coursesRes.json();
-        setCourses(data.courses || []);
+        setCourses(Array.isArray(data.courses) ? data.courses : []);
+      } else {
+        console.error('Failed to fetch courses:', coursesRes.status);
+        setCourses([]);
       }
 
       if (topicsRes.ok) {
         const data = await topicsRes.json();
-        setTopics(data.topics || []);
+        setTopics(Array.isArray(data.topics) ? data.topics : []);
       } else {
         console.error('Failed to fetch topics:', topicsRes.status);
         setTopics([]);
@@ -213,7 +223,7 @@ export default function CourseManagement() {
 
       if (subtopicsRes.ok) {
         const data = await subtopicsRes.json();
-        setSubtopics(data.subtopics || []);
+        setSubtopics(Array.isArray(data.subtopics) ? data.subtopics : []);
       } else {
         console.error('Failed to fetch subtopics:', subtopicsRes.status);
         setSubtopics([]);
@@ -221,10 +231,18 @@ export default function CourseManagement() {
 
       if (testsRes.ok) {
         const data = await testsRes.json();
-        setTests(data.tests || []);
+        setTests(Array.isArray(data.tests) ? data.tests : []);
+      } else {
+        console.error('Failed to fetch tests:', testsRes.status);
+        setTests([]);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
+      // Ensure all states are arrays even on error
+      setCourses([]);
+      setTopics([]);
+      setSubtopics([]);
+      setTests([]);
     } finally {
       setLoading(false);
     }
@@ -523,9 +541,9 @@ export default function CourseManagement() {
           topicId: testBuilderData.topicId,
           subtopicId: testBuilderData.subtopicId || null,
           title: testData.name,
-          description: `Test with ${testData.questions.length} questions`,
+          description: `Test with ${testData.questions?.length || 0} questions`,
           duration: 60,
-          totalPoints: testData.questions.length * 10
+          totalPoints: (testData.questions?.length || 0) * 10
         })
       });
 
@@ -794,6 +812,7 @@ export default function CourseManagement() {
   };
 
   const filteredCourses = (courses || []).filter(course => {
+    if (!course) return false;
     const matchesSearch = course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          course.instructor?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDifficulty = filterDifficulty === 'all' || course.difficulty === filterDifficulty;
@@ -869,7 +888,7 @@ export default function CourseManagement() {
       {/* Course List with Hierarchical Content Management */}
       {!selectedCourse ? (
         <div className="space-y-4">
-          {filteredCourses && filteredCourses.length > 0 ? filteredCourses.map((course) => (
+          {Array.isArray(filteredCourses) && filteredCourses.length > 0 ? filteredCourses.map((course) => (
             <div key={course.id} className="bg-white rounded-lg shadow-sm border border-gray-200">
               {/* Course Header */}
               <div className="p-6 border-b border-gray-200">
@@ -991,7 +1010,7 @@ export default function CourseManagement() {
 
             <div className="p-6">
               <div className="space-y-4">
-                {topics.filter(topic => topic.courseId === selectedCourse?.id).map((topic) => (
+                {Array.isArray(topics) && topics.filter(topic => topic.courseId === selectedCourse?.id).map((topic) => (
                   <div key={topic.id} className="border border-gray-200 rounded-lg">
                     {/* Topic Header */}
                     <div className="p-4 bg-gray-50 rounded-t-lg">
@@ -1062,7 +1081,7 @@ export default function CourseManagement() {
                             </button>
                           </div>
                           <div className="space-y-2">
-                            {topic.materials && topic.materials.length > 0 ? topic.materials.map((material) => (
+                            {Array.isArray(topic.materials) && topic.materials.length > 0 ? topic.materials.map((material) => (
                               <div key={material.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                                 <div className="flex items-center space-x-2">
                                   <FileText className="w-4 h-4 text-gray-500" />
@@ -1129,7 +1148,7 @@ export default function CourseManagement() {
                             </button>
                           </div>
                           <div className="space-y-2">
-                            {subtopics.filter(subtopic => subtopic.topicId === topic.id).map((subtopic) => (
+                            {Array.isArray(subtopics) && subtopics.filter(subtopic => subtopic.topicId === topic.id).map((subtopic) => (
                               <div key={subtopic.id} className="border border-gray-200 rounded-lg">
                                 {/* Subtopic Header */}
                                 <div className="p-3 bg-orange-50 rounded-t-lg">
@@ -1202,7 +1221,7 @@ export default function CourseManagement() {
                                         </button>
                                       </div>
                                       <div className="space-y-1">
-                                        {subtopic.materials && subtopic.materials.length > 0 ? subtopic.materials.map((material) => (
+                                        {Array.isArray(subtopic.materials) && subtopic.materials.length > 0 ? subtopic.materials.map((material) => (
                                           <div key={material.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                                             <div className="flex items-center space-x-2">
                                               <FileText className="w-3 h-3 text-gray-500" />
@@ -1305,7 +1324,7 @@ export default function CourseManagement() {
                                 )}
                               </div>
                             ))}
-                            {subtopics.filter(subtopic => subtopic.topicId === topic.id).length === 0 && (
+                            {Array.isArray(subtopics) && subtopics.filter(subtopic => subtopic.topicId === topic.id).length === 0 && (
                               <p className="text-sm text-gray-500 italic">No subtopics added yet</p>
                             )}
                           </div>
@@ -1367,7 +1386,7 @@ export default function CourseManagement() {
                     )}
                   </div>
                 ))}
-                {topics.filter(topic => topic.courseId === selectedCourse?.id).length === 0 && (
+                {Array.isArray(topics) && topics.filter(topic => topic.courseId === selectedCourse?.id).length === 0 && (
                   <div className="text-center py-8 bg-gray-50 rounded-lg">
                     <FileText className="mx-auto h-8 w-8 text-gray-400" />
                     <h4 className="mt-2 text-sm font-medium text-gray-900">No topics yet</h4>
@@ -1674,7 +1693,7 @@ export default function CourseManagement() {
                   required
                 >
                   <option value="">Select a topic</option>
-                  {topics.map((topic) => (
+                  {Array.isArray(topics) && topics.map((topic) => (
                     <option key={topic.id} value={topic.id}>{topic.title}</option>
                   ))}
                 </select>
@@ -1794,7 +1813,7 @@ export default function CourseManagement() {
                     ))}
                   </optgroup>
                   <optgroup label="Subtopics">
-                    {subtopics.map((subtopic) => (
+                    {Array.isArray(subtopics) && subtopics.map((subtopic) => (
                       <option key={subtopic.id} value={`subtopic-${subtopic.id}`}>{subtopic.title}</option>
                     ))}
                   </optgroup>
@@ -1930,7 +1949,7 @@ export default function CourseManagement() {
                   required
                 >
                   <option value="">Select a topic</option>
-                  {topics.map((topic) => (
+                  {Array.isArray(topics) && topics.map((topic) => (
                     <option key={topic.id} value={topic.id}>{topic.title}</option>
                   ))}
                 </select>

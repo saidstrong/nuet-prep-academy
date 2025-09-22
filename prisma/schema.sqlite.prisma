@@ -1,0 +1,426 @@
+// This is your Prisma schema file for SQLite
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  password      String
+  role          String   @default("STUDENT") // OWNER, ADMIN, MANAGER, TUTOR, STUDENT
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Profile
+  profile Profile?
+
+  // Course relations
+  courses       Course[]           @relation("CourseCreator")
+  assignedCourses Course[]         @relation("TutorAssignments")
+  
+  // Enrollment relations
+  studentEnrollments CourseEnrollment[] @relation("StudentEnrollments")
+  tutorEnrollments   CourseEnrollment[] @relation("TutorEnrollments")
+  
+  // Chat relations
+  chatParticipants ChatParticipant[]
+  messages         Message[]
+  
+  // Test relations
+  testSubmissions TestSubmission[]
+  
+  // Payment relations
+  payments Payment[]
+  
+  // Manual enrollment relations
+  manualEnrollmentRequestsStudent ManualEnrollmentRequest[] @relation("ManualEnrollmentStudent")
+  manualEnrollmentRequestsTutor ManualEnrollmentRequest[] @relation("ManualEnrollmentTutor")
+
+  // Material progress relations
+  materialProgress MaterialProgress[]
+
+  // Course preferences
+  courseFavorites CourseFavorite[] @relation("CourseFavorites")
+  courseBookmarks CourseBookmark[] @relation("CourseBookmarks")
+
+  @@map("users")
+}
+
+model Profile {
+  id            String   @id @default(cuid())
+  bio           String?
+  phone         String?
+  whatsapp      String?
+  experience    String?
+  specialization String?
+  avatar        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@map("profiles")
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  price       Float
+  duration    String
+  status      String   @default("DRAFT") // DRAFT, ACTIVE, INACTIVE, ARCHIVED
+  maxStudents Int
+  instructor  String
+  difficulty  String
+  estimatedHours Int
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  creatorId String
+  creator   User   @relation("CourseCreator", fields: [creatorId], references: [id])
+  
+  enrollments CourseEnrollment[]
+  assignedTutors User[] @relation("TutorAssignments")
+  topics      Topic[]
+  
+  // Chat relation
+  chats      Chat[]
+  
+  // Payment relation
+  payments   Payment[]
+  
+  // Manual enrollment relation
+  manualEnrollmentRequests ManualEnrollmentRequest[]
+
+  // Course preferences
+  favorites CourseFavorite[] @relation("CourseFavorites")
+  bookmarks CourseBookmark[] @relation("CourseBookmarks")
+
+  @@map("courses")
+}
+
+model Topic {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  order       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  courseId String
+  course   Course  @relation(fields: [courseId], references: [id])
+  
+  materials Material[]
+  tests     Test[]
+  questions Question[]
+
+  subtopics Subtopic[]
+
+  @@map("topics")
+}
+
+model Subtopic {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  order       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  topicId String
+  topic   Topic  @relation(fields: [topicId], references: [id])
+  
+  materials Material[]
+  tests     Test[]
+
+  @@map("subtopics")
+}
+
+model Material {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  type        String   // PDF, VIDEO, AUDIO, LINK, TEXT, PRESENTATION
+  url         String?
+  content     String?
+  order       Int
+  fileSize    Int?     // File size in bytes
+  fileName    String?  // Original filename
+  mimeType    String?  // File MIME type
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  topicId    String?
+  topic      Topic?     @relation(fields: [topicId], references: [id])
+  subtopicId String?
+  subtopic   Subtopic?  @relation(fields: [subtopicId], references: [id])
+  
+  progress MaterialProgress[]
+
+  @@map("materials")
+}
+
+model Test {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  duration    Int      // in minutes
+  totalPoints Int
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  topicId    String?
+  topic      Topic?     @relation(fields: [topicId], references: [id])
+  subtopicId String?
+  subtopic   Subtopic?  @relation(fields: [subtopicId], references: [id])
+
+  submissions TestSubmission[]
+
+  @@map("tests")
+}
+
+model Question {
+  id          String   @id @default(cuid())
+  text        String
+  type        String   @default("MULTIPLE_CHOICE")
+  difficulty  String   @default("MEDIUM")
+  points      Int      @default(1)
+  correctAnswer String?
+  explanation String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  topicId String
+  topic   Topic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  
+  options QuestionOption[]
+
+  @@map("questions")
+}
+
+model QuestionOption {
+  id          String   @id @default(cuid())
+  text        String
+  isCorrect   Boolean  @default(false)
+  order       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("question_options")
+}
+
+model CourseEnrollment {
+  id            String   @id @default(cuid())
+  status        String   @default("PENDING") // PENDING, APPROVED, ACTIVE, COMPLETED, CANCELLED
+  paymentStatus String   @default("PENDING") // PENDING, PAID, FAILED, REFUNDED
+  paymentMethod String?   @default("CARD") // KASPI, CARD, BANK_TRANSFER, CONTACT_MANAGER, MANUAL
+  enrolledAt    DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  courseId  String
+  course    Course @relation(fields: [courseId], references: [id])
+  
+  studentId String
+  student   User   @relation("StudentEnrollments", fields: [studentId], references: [id])
+  
+  tutorId   String
+  tutor     User   @relation("TutorEnrollments", fields: [tutorId], references: [id])
+  
+  payments  Payment[]
+
+  @@map("course_enrollments")
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  amount    Float
+  currency  String   @default("KZT")
+  status    String   @default("PENDING") // PENDING, PAID, FAILED, REFUNDED
+  paymentMethod String @default("CARD") // KASPI, CARD, BANK_TRANSFER, CONTACT_MANAGER, MANUAL
+  transactionId String?   @unique
+  metadata  String?  // JSON as string
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  // Relations
+  enrollmentId String?
+  enrollment   CourseEnrollment? @relation(fields: [enrollmentId], references: [id])
+  
+  studentId String
+  student   User   @relation(fields: [studentId], references: [id])
+  
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id])
+
+  @@map("payments")
+}
+
+model Chat {
+  id        String   @id @default(cuid())
+  name      String?
+  type      String   // DIRECT, GROUP, COURSE
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  courseId String?
+  course   Course? @relation(fields: [courseId], references: [id])
+  
+  participants ChatParticipant[]
+  messages     Message[]
+
+  @@map("chats")
+}
+
+model ChatParticipant {
+  id        String   @id @default(cuid())
+  joinedAt  DateTime @default(now())
+  leftAt    DateTime?
+  isAdmin   Boolean  @default(false)
+
+  // Relations
+  chatId String
+  chat   Chat   @relation(fields: [chatId], references: [id])
+  
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@map("chat_participants")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  type      String   @default("TEXT") // TEXT, IMAGE, FILE, SYSTEM
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  chatId String
+  chat   Chat   @relation(fields: [chatId], references: [id])
+  
+  senderId String
+  sender   User   @relation(fields: [senderId], references: [id])
+
+  @@map("messages")
+}
+
+model TestSubmission {
+  id         String   @id @default(cuid())
+  answers    String   // JSON as string
+  score      Int
+  maxScore   Int
+  timeSpent  Int      // in seconds
+  status     String
+  submittedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  testId String
+  test   Test   @relation(fields: [testId], references: [id])
+  
+  studentId String
+  student   User   @relation(fields: [studentId], references: [id])
+
+  @@map("test_submissions")
+}
+
+model ManualEnrollmentRequest {
+  id        String   @id @default(cuid())
+  studentId String
+  courseId  String
+  tutorId   String
+  fullName  String
+  phone     String
+  email     String
+  preferredContact String // 'whatsapp' or 'telegram'
+  message   String?
+  status    String  @default("PENDING") // 'PENDING', 'PAID', 'APPROVED', 'REJECTED'
+  courseTitle String
+  coursePrice Float
+  tutorName String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  student User @relation("ManualEnrollmentStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  tutor   User @relation("ManualEnrollmentTutor", fields: [tutorId], references: [id], onDelete: Cascade)
+
+  @@map("manual_enrollment_requests")
+}
+
+model MaterialProgress {
+  id        String   @id @default(cuid())
+  status    String   @default("NOT_STARTED") // 'NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'
+  timeSpent Int      @default(0) // Time spent in seconds
+  lastAccessed DateTime @default(now())
+  completedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  materialId String
+  material   Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  
+  studentId String
+  student   User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([materialId, studentId])
+  @@map("material_progress")
+}
+
+model CourseFavorite {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  
+  // Relations
+  studentId String
+  student   User   @relation("CourseFavorites", fields: [studentId], references: [id], onDelete: Cascade)
+  
+  courseId String
+  course   Course @relation("CourseFavorites", fields: [courseId], references: [id], onDelete: Cascade)
+  
+  @@unique([studentId, courseId])
+  @@map("course_favorites")
+}
+
+model CourseBookmark {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  
+  // Relations
+  studentId String
+  student   User   @relation("CourseBookmarks", fields: [studentId], references: [id], onDelete: Cascade)
+  
+  courseId String
+  course   Course @relation("CourseBookmarks", fields: [courseId], references: [id], onDelete: Cascade)
+  
+  @@unique([studentId, courseId])
+  @@map("course_bookmarks")
+}

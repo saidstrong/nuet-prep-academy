@@ -275,7 +275,7 @@ export default function AdminCourseManagement() {
                       </div>
                       <div>
                         <div className="text-sm font-medium text-slate-900">{course.title}</div>
-                        <div className="text-sm text-slate-500">{course.topics.length} topics</div>
+                        <div className="text-sm text-slate-500">{course.topics?.length || 0} topics</div>
                       </div>
                     </div>
                   </td>

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { isAdminOrManager } from '@/lib/auth';
 import { 
   BookOpen, 
   Plus, 
@@ -84,7 +85,7 @@ export default function CourseManagementPage({ params }: { params: { courseId: s
   useEffect(() => {
     if (status === 'loading') return;
     
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || !isAdminOrManager(session.user.role)) {
       router.push('/auth/signin');
       return;
     }
@@ -200,8 +201,8 @@ export default function CourseManagementPage({ params }: { params: { courseId: s
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{course.title}</h1>
-              <p className="text-gray-600 mt-2">{course.description}</p>
+              <h1 className="text-3xl font-bold text-gray-900">{course?.title || 'Loading...'}</h1>
+              <p className="text-gray-600 mt-2">{course?.description || ''}</p>
             </div>
             <button
               onClick={() => router.push('/admin/dashboard')}
@@ -221,7 +222,7 @@ export default function CourseManagementPage({ params }: { params: { courseId: s
               <Users className="w-8 h-8 text-blue-500" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Enrolled Students</p>
-                <p className="text-2xl font-bold text-gray-900">{course.enrolledStudents}</p>
+                <p className="text-2xl font-bold text-gray-900">{course?.enrolledStudents || 0}</p>
               </div>
             </div>
           </div>
@@ -231,7 +232,7 @@ export default function CourseManagementPage({ params }: { params: { courseId: s
               <BookOpen className="w-8 h-8 text-green-500" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Topics</p>
-                <p className="text-2xl font-bold text-gray-900">{course.topics.length}</p>
+                <p className="text-2xl font-bold text-gray-900">{course?.topics?.length || 0}</p>
               </div>
             </div>
           </div>
@@ -241,7 +242,7 @@ export default function CourseManagementPage({ params }: { params: { courseId: s
               <DollarSign className="w-8 h-8 text-yellow-500" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Price</p>
-                <p className="text-2xl font-bold text-gray-900">${course.price}</p>
+                <p className="text-2xl font-bold text-gray-900">${course?.price || 0}</p>
               </div>
             </div>
           </div>
@@ -251,7 +252,7 @@ export default function CourseManagementPage({ params }: { params: { courseId: s
               <Calendar className="w-8 h-8 text-purple-500" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Duration</p>
-                <p className="text-2xl font-bold text-gray-900">{course.duration}</p>
+                <p className="text-2xl font-bold text-gray-900">{course?.duration || 'N/A'}</p>
               </div>
             </div>
           </div>
@@ -273,7 +274,7 @@ export default function CourseManagementPage({ params }: { params: { courseId: s
           </div>
 
           <div className="p-6">
-            {course.topics.length === 0 ? (
+            {!course?.topics || course.topics.length === 0 ? (
               <div className="text-center py-12">
                 <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No topics yet</h3>
@@ -287,7 +288,7 @@ export default function CourseManagementPage({ params }: { params: { courseId: s
               </div>
             ) : (
               <div className="space-y-4">
-                {course.topics
+                {course?.topics && course.topics
                   .sort((a, b) => a.order - b.order)
                   .map((topic) => (
                     <div key={topic.id} className="border border-gray-200 rounded-lg">
@@ -422,7 +423,7 @@ export default function CourseManagementPage({ params }: { params: { courseId: s
       <TopicCreationModal
         isOpen={isTopicModalOpen}
         onClose={() => setIsTopicModalOpen(false)}
-        courseId={course.id}
+        courseId={course?.id || ''}
         onTopicCreated={handleTopicCreated}
       />
 

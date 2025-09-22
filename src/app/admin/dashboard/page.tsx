@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import Header from '@/components/Header';
 import ResponsiveLayout from '@/components/ResponsiveLayout';
 import EnhancedAdminDashboard from '@/components/EnhancedAdminDashboard';
+import { isAdminOrManager } from '@/lib/auth';
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
@@ -13,7 +14,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (status === 'loading') return;
     
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || !isAdminOrManager(session.user.role)) {
       router.push('/auth/signin');
       return;
     }
@@ -32,7 +33,7 @@ export default function AdminDashboard() {
     );
   }
 
-  if (!session || session.user.role !== 'ADMIN') {
+  if (!session || !isAdminOrManager(session.user.role)) {
     return null;
   }
 

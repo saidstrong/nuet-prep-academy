@@ -66,12 +66,18 @@ export default function CoursesPage() {
 
       if (favoritesRes.ok) {
         const favoritesData = await favoritesRes.json();
-        setFavorites(new Set(favoritesData.favorites?.map((f: any) => f.courseId) || []));
+        const favoritesArray = favoritesData.favorites && Array.isArray(favoritesData.favorites) 
+          ? favoritesData.favorites.map((f: any) => f.courseId) 
+          : [];
+        setFavorites(new Set(favoritesArray));
       }
 
       if (bookmarksRes.ok) {
         const bookmarksData = await bookmarksRes.json();
-        setBookmarks(new Set(bookmarksData.bookmarks?.map((b: any) => b.courseId) || []));
+        const bookmarksArray = bookmarksData.bookmarks && Array.isArray(bookmarksData.bookmarks) 
+          ? bookmarksData.bookmarks.map((b: any) => b.courseId) 
+          : [];
+        setBookmarks(new Set(bookmarksArray));
       }
     } catch (error) {
       console.error('Error fetching user preferences:', error);

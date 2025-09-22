@@ -95,11 +95,9 @@ export default function EnhancedStudentDashboardV2() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [coursesRes, testsRes, challengesRes, goalsRes] = await Promise.all([
+      const [coursesRes, testsRes] = await Promise.all([
         fetch('/api/student/courses', { credentials: 'include' }),
-        fetch('/api/student/tests', { credentials: 'include' }),
-        fetch('/api/streak-challenges', { credentials: 'include' }),
-        fetch('/api/gamification/goals', { credentials: 'include' })
+        fetch('/api/student/tests', { credentials: 'include' })
       ]);
 
       if (coursesRes.ok) {
@@ -112,15 +110,9 @@ export default function EnhancedStudentDashboardV2() {
         setTests(data.tests || []);
       }
 
-      if (challengesRes.ok) {
-        const data = await challengesRes.json();
-        setChallenges(data.challenges || []);
-      }
-
-      if (goalsRes.ok) {
-        const data = await goalsRes.json();
-        setLearningGoals(data.goals || []);
-      }
+      // Set empty arrays for removed gamification features
+      setChallenges([]);
+      setLearningGoals([]);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -128,15 +120,15 @@ export default function EnhancedStudentDashboardV2() {
     }
   };
 
-  const getTotalCourses = () => courses.length;
-  const getTotalTests = () => tests.length;
+  const getTotalCourses = () => courses?.length || 0;
+  const getTotalTests = () => tests?.length || 0;
   const getAverageScore = () => {
-    if (tests.length === 0) return 0;
+    if (!tests || tests.length === 0) return 0;
     const totalScore = tests.reduce((sum, test) => sum + (test.percentage || 0), 0);
     return Math.round(totalScore / tests.length);
   };
-  const getActiveChallenges = () => challenges.filter(c => c.isActive).length;
-  const getCompletedGoals = () => learningGoals.filter(g => g.isCompleted).length;
+  const getActiveChallenges = () => challenges?.filter(c => c.isActive).length || 0;
+  const getCompletedGoals = () => learningGoals?.filter(g => g.isCompleted).length || 0;
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -211,11 +203,11 @@ export default function EnhancedStudentDashboardV2() {
         <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
           <div className="flex items-center">
             <div className="p-2 bg-purple-100 rounded-lg">
-              <Target className="w-5 h-5 text-purple-600" />
+              <PlayCircle className="w-5 h-5 text-purple-600" />
             </div>
             <div className="ml-3">
-              <p className="text-xs font-medium text-slate-600">Challenges</p>
-              <p className="text-xl font-bold text-slate-900">{getActiveChallenges()}</p>
+              <p className="text-xs font-medium text-slate-600">Tests Taken</p>
+              <p className="text-xl font-bold text-slate-900">{getTotalTests()}</p>
             </div>
           </div>
         </div>
@@ -223,11 +215,11 @@ export default function EnhancedStudentDashboardV2() {
         <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
           <div className="flex items-center">
             <div className="p-2 bg-orange-100 rounded-lg">
-              <Trophy className="w-5 h-5 text-orange-600" />
+              <Clock className="w-5 h-5 text-orange-600" />
             </div>
             <div className="ml-3">
-              <p className="text-xs font-medium text-slate-600">Goals</p>
-              <p className="text-xl font-bold text-slate-900">{getCompletedGoals()}</p>
+              <p className="text-xs font-medium text-slate-600">Study Time</p>
+              <p className="text-xl font-bold text-slate-900">24h</p>
             </div>
           </div>
         </div>
@@ -239,7 +231,6 @@ export default function EnhancedStudentDashboardV2() {
           { id: 'overview', label: 'Overview', icon: BarChart3 },
           { id: 'courses', label: 'Courses', icon: BookOpen },
           { id: 'grades', label: 'Grades', icon: Percent },
-          { id: 'challenges-goals', label: 'Challenges & Goals', icon: Target },
           { id: 'access', label: 'Access Control', icon: Lock }
         ].map((tab) => {
           const Icon = tab.icon;
@@ -466,111 +457,6 @@ export default function EnhancedStudentDashboardV2() {
         </div>
       )}
 
-      {activeTab === 'challenges-goals' && (
-        <div className="space-y-6">
-          {/* Challenges */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-slate-900">Active Challenges</h3>
-              <button
-                onClick={() => router.push('/challenges')}
-                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 text-sm"
-              >
-                View All Challenges
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {challenges.map((challenge) => (
-                <div key={challenge.id} className="bg-white rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
-                  <div className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-lg font-semibold text-slate-900">{challenge.name}</h4>
-                      <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                        Active
-                      </span>
-                    </div>
-
-                    <p className="text-slate-600 text-sm mb-4">{challenge.description}</p>
-
-                    <div className="space-y-3 mb-6">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-600">Progress</span>
-                        <span className="font-medium text-slate-900">{challenge.progress}/{challenge.target}</span>
-                      </div>
-                      <div className="w-full bg-slate-200 rounded-full h-2">
-                        <div
-                          className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${(challenge.progress / challenge.target) * 100}%` }}
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-600">Reward:</span>
-                        <span className="font-medium text-green-600">+{challenge.reward} points</span>
-                      </div>
-
-                      <div className="flex items-center text-sm text-slate-600">
-                        <Clock className="w-4 h-4 mr-2" />
-                        <span>Deadline: {new Date(challenge.deadline).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-
-                    <button className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium">
-                      Participate
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Learning Goals */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-slate-900">Learning Goals</h3>
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
-                Set New Goal
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {learningGoals.map((goal) => (
-                <div key={goal.id} className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h4 className="text-lg font-semibold text-slate-900">{goal.title}</h4>
-                      <p className="text-slate-600 text-sm">{goal.description}</p>
-                    </div>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      goal.isCompleted ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                    }`}>
-                      {goal.isCompleted ? 'Completed' : 'In Progress'}
-                    </span>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-600">Progress</span>
-                      <span className="font-medium text-slate-900">{goal.current}/{goal.target} {goal.unit}</span>
-                    </div>
-                    <div className="w-full bg-slate-200 rounded-full h-2">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${(goal.current / goal.target) * 100}%` }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between text-sm text-slate-600">
-                      <span>Deadline: {new Date(goal.deadline).toLocaleDateString()}</span>
-                      <span className="capitalize">{goal.category.replace('_', ' ').toLowerCase()}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {activeTab === 'access' && (
         <div className="space-y-6">

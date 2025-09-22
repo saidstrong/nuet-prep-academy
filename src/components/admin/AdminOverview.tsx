@@ -142,8 +142,8 @@ export default function AdminOverview({ stats, onRefresh }: AdminOverviewProps) 
                     <div className="flex items-start space-x-3">
                       {getActivityIcon(activity.type)}
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-900">{activity.description}</p>
-                        <p className="text-xs text-slate-600">{activity.timestamp}</p>
+                        <p className="text-sm font-medium text-slate-900">{activity.message}</p>
+                        <p className="text-xs text-slate-600">{new Date(activity.timestamp).toLocaleString()}</p>
                       </div>
                     </div>
                   </div>

@@ -1,6 +1,6 @@
 {
-  "buildCommand": "echo 'Static site ready'",
-  "outputDirectory": "public",
-  "framework": null,
-  "installCommand": "echo 'No dependencies needed'"
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "installCommand": "npm install"
 }

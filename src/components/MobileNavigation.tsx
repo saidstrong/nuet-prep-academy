@@ -56,6 +56,18 @@ export default function MobileNavigation({ isOpen, onClose }: MobileNavigationPr
 
   const navigationItems = [
     {
+      name: 'Home',
+      href: '/',
+      icon: Home,
+      roles: ['STUDENT', 'TUTOR', 'ADMIN', 'MANAGER']
+    },
+    {
+      name: 'Courses',
+      href: '/courses',
+      icon: BookOpen,
+      roles: ['STUDENT', 'TUTOR', 'ADMIN', 'MANAGER']
+    },
+    {
       name: 'Dashboard',
       href: '/student/dashboard',
       icon: Home,
@@ -95,19 +107,19 @@ export default function MobileNavigation({ isOpen, onClose }: MobileNavigationPr
       name: 'Chat',
       href: '/chat',
       icon: MessageSquare,
-      roles: ['STUDENT', 'TUTOR', 'ADMIN']
+      roles: ['STUDENT', 'TUTOR', 'ADMIN', 'MANAGER']
     },
     {
       name: 'Profile',
       href: '/profile',
       icon: User,
-      roles: ['STUDENT', 'TUTOR', 'ADMIN']
+      roles: ['STUDENT', 'TUTOR', 'ADMIN', 'MANAGER']
     },
     {
       name: 'Admin Dashboard',
       href: '/admin/dashboard',
       icon: Settings,
-      roles: ['ADMIN', 'OWNER']
+      roles: ['ADMIN', 'OWNER', 'MANAGER']
     },
     {
       name: 'Tutor Dashboard',
