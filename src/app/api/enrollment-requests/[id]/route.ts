@@ -40,6 +40,13 @@ export async function PUT(
             name: true,
             email: true
           }
+        },
+        tutor: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
         }
       }
     });
@@ -76,11 +83,33 @@ export async function PUT(
     // If approved, create enrollment
     if (status === 'APPROVED' && enrollmentRequest.student) {
       try {
+        // First, find or create the student user
+        let studentUser = await prisma.user.findUnique({
+          where: { email: enrollmentRequest.studentEmail }
+        });
+
+        if (!studentUser) {
+          // Create student user if doesn't exist
+          studentUser = await prisma.user.create({
+            data: {
+              name: enrollmentRequest.studentName,
+              email: enrollmentRequest.studentEmail,
+              role: 'STUDENT',
+              phone: enrollmentRequest.studentPhone,
+              whatsapp: enrollmentRequest.whatsappNumber,
+              telegram: enrollmentRequest.telegramUsername
+            }
+          });
+        }
+
+        // Create enrollment with selected tutor or default instructor
+        const tutorId = enrollmentRequest.tutor?.id || enrollmentRequest.course.instructor;
+        
         await prisma.courseEnrollment.create({
           data: {
             courseId: enrollmentRequest.courseId,
-            studentId: enrollmentRequest.student.id,
-            tutorId: enrollmentRequest.course.instructor, // This should be the assigned tutor
+            studentId: studentUser.id,
+            tutorId: tutorId,
             status: 'ACTIVE',
             paymentStatus: 'PAID',
             paymentMethod: 'CONTACT_MANAGER'

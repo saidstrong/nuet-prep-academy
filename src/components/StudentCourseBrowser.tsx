@@ -241,12 +241,21 @@ export default function StudentCourseBrowser() {
                       : 'Request Enrollment'
                     }
                   </button>
-                  <button
-                    onClick={() => window.open(`/courses/${course.id}`, '_blank')}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
+                  {enrollmentStatus === 'APPROVED' ? (
+                    <button
+                      onClick={() => window.open(`/courses/${course.id}/access`, '_blank')}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => window.open(`/courses/${course.id}`, '_blank')}
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
