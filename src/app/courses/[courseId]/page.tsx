@@ -9,9 +9,8 @@ import {
 } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import EnhancedEnrollmentFlow from '@/components/EnhancedEnrollmentFlow';
-import CourseContentViewer from '@/components/CourseContentViewer';
-import ProgressTracker from '@/components/ProgressTracker';
+import EnrollmentRequestModal from '@/components/EnrollmentRequestModal';
+// Removed unused imports
 
 interface Course {
   id: string;
@@ -56,7 +55,7 @@ export default function CourseDetailPage() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showEnrollmentFlow, setShowEnrollmentFlow] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'content'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview'>('overview');
 
   const courseId = params.courseId as string;
 
@@ -104,75 +103,11 @@ export default function CourseDetailPage() {
       return;
     }
 
-    // Open enrollment flow
+    // Open enrollment request modal
     setShowEnrollmentFlow(true);
   };
 
-  const handleEnrollmentComplete = async (enrollmentData: any) => {
-    try {
-      console.log('Processing enrollment:', enrollmentData);
-      
-      // Create enrollment in database
-      const enrollmentResponse = await fetch('/api/enrollments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          courseId: enrollmentData.courseId,
-          tutorId: enrollmentData.tutorId,
-          paymentMethod: enrollmentData.paymentMethod,
-          contactInfo: enrollmentData.contactInfo
-        })
-      });
-
-      if (!enrollmentResponse.ok) {
-        const errorData = await enrollmentResponse.json();
-        throw new Error(errorData.message || 'Failed to create enrollment');
-      }
-
-      const enrollmentResult = await enrollmentResponse.json();
-      console.log('Enrollment created:', enrollmentResult);
-
-      // If payment method is not "CONTACT_MANAGER", process payment
-      if (enrollmentData.paymentMethod !== 'CONTACT_MANAGER') {
-        const paymentResponse = await fetch('/api/payments', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            enrollmentId: enrollmentResult.enrollment.id,
-            paymentMethod: enrollmentData.paymentMethod,
-            amount: course?.price || 0
-          })
-        });
-
-        if (!paymentResponse.ok) {
-          const errorData = await paymentResponse.json();
-          throw new Error(errorData.message || 'Payment failed');
-        }
-
-        const paymentResult = await paymentResponse.json();
-        console.log('Payment processed:', paymentResult);
-      }
-
-      setShowEnrollmentFlow(false);
-      setIsEnrolled(true);
-      
-      // Show success message
-      alert('Enrollment successful! You can now access the course content.');
-      
-      // Switch to content tab to show the course materials
-      setActiveTab('content');
-      
-    } catch (error) {
-      console.error('Enrollment error:', error);
-      alert(`Enrollment failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  };
+  // Enrollment is now handled through enrollment request modal
 
   const handleToggleFavorite = async () => {
     if (!session) {
@@ -301,33 +236,7 @@ export default function CourseDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2">
-            {/* Tab Navigation */}
-            <div className="bg-white rounded-lg shadow-sm mb-6">
-              <div className="border-b border-gray-200">
-                <nav className="flex space-x-8 px-6">
-                  {[
-                    { id: 'overview', label: 'Overview', icon: BookOpen },
-                    { id: 'content', label: 'Content', icon: Target }
-                  ].map((tab) => {
-                    const Icon = tab.icon;
-                    return (
-                      <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id as any)}
-                        className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
-                          activeTab === tab.id
-                            ? 'border-blue-500 text-blue-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                        }`}
-                      >
-                        <Icon className="w-4 h-4" />
-                        <span>{tab.label}</span>
-                      </button>
-                    );
-                  })}
-                </nav>
-              </div>
-            </div>
+            {/* Course Overview Only - No Content Access Before Enrollment */}
             {/* Tab Content */}
             {activeTab === 'overview' && (
               <>
@@ -389,54 +298,49 @@ export default function CourseDetailPage() {
               </div>
             </div>
 
-            {/* Course Content - Simplified */}
+            {/* Course Information - No Content Access Before Enrollment */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Course Topics</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-6">Course Information</h2>
               
-              {topics.length > 0 ? (
-                <div className="space-y-4">
-                  {topics.map((topic, index) => (
-                    <div key={topic.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium">
-                          {index + 1}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 mb-1">{topic.title}</h3>
-                          {topic.description && (
-                            <p className="text-sm text-gray-600">{topic.description}</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+              <div className="space-y-4">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <BookOpen className="w-5 h-5 text-blue-600" />
+                    <span className="font-medium text-blue-900">Course Structure</span>
+                  </div>
+                  <p className="text-sm text-blue-800">
+                    This course includes {course.totalTopics} topics with comprehensive materials, 
+                    interactive tests, and hands-on exercises. Content will be available after enrollment approval.
+                  </p>
                 </div>
-              ) : (
-                <div className="text-center py-8">
-                  <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No topics available yet</h3>
-                  <p className="text-gray-600">Course content is being prepared. Check back soon!</p>
+
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Users className="w-5 h-5 text-green-600" />
+                    <span className="font-medium text-green-900">Learning Experience</span>
+                  </div>
+                  <p className="text-sm text-green-800">
+                    Learn from experienced instructors with {course.estimatedHours} hours of content, 
+                    including live sessions and personalized support.
+                  </p>
                 </div>
-              )}
+
+                <div className="bg-yellow-50 p-4 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Target className="w-5 h-5 text-yellow-600" />
+                    <span className="font-medium text-yellow-900">Access Requirements</span>
+                  </div>
+                  <p className="text-sm text-yellow-800">
+                    Course content is only accessible after enrollment approval by our managers. 
+                    Contact us to begin your learning journey.
+                  </p>
+                </div>
+              </div>
             </div>
                 </>
               )}
 
-              {activeTab === 'content' && (
-                <div className="bg-white rounded-lg shadow-sm p-6">
-                  <CourseContentViewer 
-                    courseId={courseId}
-                    onContentComplete={(contentId) => {
-                      console.log('Content completed:', contentId);
-                    }}
-                    onQuizSubmit={(contentId, answers) => {
-                      console.log('Quiz submitted:', contentId, answers);
-                    }}
-                  />
-                </div>
-              )}
-
-              {/* Progress tab removed as requested */}
+              {/* Content access removed - only available after enrollment approval */}
             </div>
 
           {/* Sidebar */}
@@ -485,7 +389,7 @@ export default function CourseDetailPage() {
                     onClick={handleEnroll}
                     className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors"
                   >
-                    {course.price === 0 ? 'Enroll Free' : `Enroll for ${course.price} ₸`}
+                    Enroll for {course.title}
                   </button>
                   <button className="w-full border border-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors">
                     <Share2 className="w-4 h-4 inline mr-2" />
@@ -537,18 +441,13 @@ export default function CourseDetailPage() {
 
       <Footer />
       
-      {/* Enhanced Enrollment Flow Modal */}
+      {/* Enrollment Request Modal */}
       {course && showEnrollmentFlow && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <EnhancedEnrollmentFlow
-              course={course}
-              onEnroll={handleEnrollmentComplete}
-              onCancel={() => setShowEnrollmentFlow(false)}
-              loading={false}
-            />
-          </div>
-        </div>
+        <EnrollmentRequestModal
+          isOpen={showEnrollmentFlow}
+          onClose={() => setShowEnrollmentFlow(false)}
+          course={course}
+        />
       )}
     </div>
   );
