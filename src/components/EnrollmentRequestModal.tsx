@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from 'react';
-import { X, Phone, MessageCircle, Send } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Phone, MessageCircle, Send, User } from 'lucide-react';
 
 interface EnrollmentRequestModalProps {
   isOpen: boolean;
@@ -23,10 +23,30 @@ export default function EnrollmentRequestModal({ isOpen, onClose, course }: Enro
     whatsappNumber: '',
     telegramUsername: '',
     preferredContact: 'whatsapp',
+    selectedTutor: '',
     message: ''
   });
+  const [tutors, setTutors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchTutors();
+    }
+  }, [isOpen]);
+
+  const fetchTutors = async () => {
+    try {
+      const response = await fetch('/api/tutors');
+      if (response.ok) {
+        const data = await response.json();
+        setTutors(data.tutors || []);
+      }
+    } catch (error) {
+      console.error('Error fetching tutors:', error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +78,7 @@ export default function EnrollmentRequestModal({ isOpen, onClose, course }: Enro
             whatsappNumber: '',
             telegramUsername: '',
             preferredContact: 'whatsapp',
+            selectedTutor: '',
             message: ''
           });
         }, 3000);
@@ -195,6 +216,25 @@ export default function EnrollmentRequestModal({ isOpen, onClose, course }: Enro
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="@username"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Preferred Tutor
+                  </label>
+                  <select
+                    name="selectedTutor"
+                    value={formData.selectedTutor}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select a tutor (optional)</option>
+                    {tutors.map((tutor: any) => (
+                      <option key={tutor.id} value={tutor.id}>
+                        {tutor.name} - {tutor.specialization || 'General'}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>

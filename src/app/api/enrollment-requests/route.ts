@@ -37,6 +37,13 @@ export async function GET(request: NextRequest) {
             name: true,
             email: true
           }
+        },
+        tutor: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
         }
       },
       orderBy: {
@@ -63,6 +70,7 @@ export async function POST(request: NextRequest) {
       whatsappNumber, 
       telegramUsername, 
       preferredContact, 
+      selectedTutor,
       message 
     } = body;
 
@@ -108,6 +116,7 @@ export async function POST(request: NextRequest) {
         whatsappNumber: whatsappNumber || null,
         telegramUsername: telegramUsername || null,
         preferredContact,
+        selectedTutor: selectedTutor || null,
         message: message || null,
         status: 'PENDING'
       },

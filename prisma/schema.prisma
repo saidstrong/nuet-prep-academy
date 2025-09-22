@@ -84,6 +84,7 @@ model User {
   
   // Enrollment request relations
   enrollmentRequests EnrollmentRequest[]
+  tutorEnrollmentRequests EnrollmentRequest[] @relation("EnrollmentRequestTutor")
   
   // Test relations
   testSubmissions TestSubmission[]
@@ -338,6 +339,7 @@ model EnrollmentRequest {
   whatsappNumber String?
   telegramUsername String?
   preferredContact String // 'whatsapp' or 'telegram'
+  selectedTutor String? // Selected tutor ID
   message   String?
   status    EnrollmentRequestStatus @default(PENDING)
   adminNotes String?
@@ -350,6 +352,9 @@ model EnrollmentRequest {
   
   studentId String?
   student   User?  @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  
+  tutorId String?
+  tutor    User?  @relation("EnrollmentRequestTutor", fields: [tutorId], references: [id], onDelete: SetNull)
 
   @@map("enrollment_requests")
 }

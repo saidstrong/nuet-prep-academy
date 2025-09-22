@@ -56,7 +56,7 @@ export default function CourseDetailPage() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showEnrollmentFlow, setShowEnrollmentFlow] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'content' | 'progress'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'content'>('overview');
 
   const courseId = params.courseId as string;
 
@@ -307,8 +307,7 @@ export default function CourseDetailPage() {
                 <nav className="flex space-x-8 px-6">
                   {[
                     { id: 'overview', label: 'Overview', icon: BookOpen },
-                    { id: 'content', label: 'Content', icon: Target },
-                    { id: 'progress', label: 'Progress', icon: Star }
+                    { id: 'content', label: 'Content', icon: Target }
                   ].map((tab) => {
                     const Icon = tab.icon;
                     return (
@@ -437,16 +436,7 @@ export default function CourseDetailPage() {
                 </div>
               )}
 
-              {activeTab === 'progress' && (
-                <div className="bg-white rounded-lg shadow-sm p-6">
-                  <ProgressTracker 
-                    courseId={courseId}
-                    onProgressUpdate={(progress) => {
-                      console.log('Progress updated:', progress);
-                    }}
-                  />
-                </div>
-              )}
+              {/* Progress tab removed as requested */}
             </div>
 
           {/* Sidebar */}

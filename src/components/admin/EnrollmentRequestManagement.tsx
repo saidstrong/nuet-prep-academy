@@ -23,6 +23,7 @@ interface EnrollmentRequest {
   whatsappNumber?: string;
   telegramUsername?: string;
   preferredContact: string;
+  selectedTutor?: string;
   message?: string;
   status: string;
   adminNotes?: string;
@@ -35,6 +36,11 @@ interface EnrollmentRequest {
     instructor: string;
   };
   student?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  tutor?: {
     id: string;
     name: string;
     email: string;
@@ -435,6 +441,13 @@ export default function EnrollmentRequestManagement() {
                   <label className="block text-sm font-medium text-gray-700">Course</label>
                   <p className="text-sm text-gray-900">{selectedRequest.course.title} - ${selectedRequest.course.price}</p>
                 </div>
+
+                {selectedRequest.tutor && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Selected Tutor</label>
+                    <p className="text-sm text-gray-900">{selectedRequest.tutor.name} ({selectedRequest.tutor.email})</p>
+                  </div>
+                )}
 
                 {selectedRequest.message && (
                   <div>
