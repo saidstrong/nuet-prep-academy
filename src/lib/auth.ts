@@ -28,7 +28,14 @@ export const authOptions: NextAuthOptions = {
         try {
           // Try database authentication first
           const user = await prisma.user.findUnique({
-            where: { email: credentials.email }
+            where: { email: credentials.email },
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              password: true,
+              role: true
+            }
           });
           
           if (user) {
@@ -50,7 +57,13 @@ export const authOptions: NextAuthOptions = {
           }
         } catch (error) {
           console.error("❌ Database authentication error:", error);
-          console.log("🔄 Falling back to mock authentication...");
+          
+          // Check if it's a schema issue (missing columns)
+          if (error.code === 'P2022' || error.message.includes('does not exist')) {
+            console.log("🔄 Database schema issue detected, falling back to mock authentication...");
+          } else {
+            console.log("🔄 Database connection issue, falling back to mock authentication...");
+          }
         }
 
         // Fallback to mock users for production/database issues

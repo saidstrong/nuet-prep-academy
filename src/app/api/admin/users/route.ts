@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
             profile: true,
             _count: {
               select: {
-                courseEnrollments: true,
+                studentEnrollments: true,
                 courses: true
               }
             }
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
             avatar: null
           },
           _count: {
-            courseEnrollments: 0,
+            studentEnrollments: 0,
             courses: 5
           }
         },
@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
             avatar: null
           },
           _count: {
-            courseEnrollments: 0,
+            studentEnrollments: 0,
             courses: 3
           }
         },
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
             avatar: null
           },
           _count: {
-            courseEnrollments: 0,
+            studentEnrollments: 0,
             courses: 2
           }
         },
@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
             avatar: null
           },
           _count: {
-            courseEnrollments: 3,
+            studentEnrollments: 3,
             courses: 0
           }
         }
