@@ -207,7 +207,11 @@ export async function POST(request: NextRequest) {
         console.log('🔄 Table does not exist, skipping duplicate check');
         existingRequest = null;
       } else {
-        throw tableError;
+        console.error('❌ Unexpected table error:', tableError);
+        return NextResponse.json({ 
+          error: 'Database error checking existing requests',
+          details: tableError instanceof Error ? tableError.message : 'Unknown error'
+        }, { status: 500 });
       }
     }
 
