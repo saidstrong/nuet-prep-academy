@@ -138,7 +138,11 @@ export default function CourseManagement() {
     price: 0,
     duration: '',
     maxStudents: 30,
-    status: 'ACTIVE' as 'DRAFT' | 'ACTIVE' | 'INACTIVE' | 'ARCHIVED'
+    status: 'ACTIVE' as 'DRAFT' | 'ACTIVE' | 'INACTIVE' | 'ARCHIVED',
+    enrollmentDeadline: '',
+    accessStartDate: '',
+    accessEndDate: '',
+    googleMeetLink: ''
   });
 
   const [topicForm, setTopicForm] = useState({
@@ -1412,7 +1416,7 @@ export default function CourseManagement() {
                 onClick={() => {
                   setShowCourseForm(false);
                   setEditingCourse(null);
-                  setCourseForm({ title: '', description: '', instructor: '', difficulty: 'BEGINNER', estimatedHours: 1, price: 0, duration: '', maxStudents: 30, status: 'ACTIVE' });
+                  setCourseForm({ title: '', description: '', instructor: '', difficulty: 'BEGINNER', estimatedHours: 1, price: 0, duration: '', maxStudents: 30, status: 'ACTIVE', enrollmentDeadline: '', accessStartDate: '', accessEndDate: '', googleMeetLink: '' });
         setFormErrors({});
                 }}
                 className="text-gray-400 hover:text-gray-600"
@@ -1540,6 +1544,50 @@ export default function CourseManagement() {
                   <option value="ARCHIVED">Archived</option>
                 </select>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Enrollment Deadline</label>
+                <input
+                  type="datetime-local"
+                  value={courseForm.enrollmentDeadline}
+                  onChange={(e) => setCourseForm({ ...courseForm, enrollmentDeadline: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Set enrollment deadline"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Access Start Date</label>
+                <input
+                  type="datetime-local"
+                  value={courseForm.accessStartDate}
+                  onChange={(e) => setCourseForm({ ...courseForm, accessStartDate: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="When students can start accessing"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Access End Date</label>
+                <input
+                  type="datetime-local"
+                  value={courseForm.accessEndDate}
+                  onChange={(e) => setCourseForm({ ...courseForm, accessEndDate: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="When students lose access"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Google Meet Link</label>
+                <input
+                  type="url"
+                  value={courseForm.googleMeetLink}
+                  onChange={(e) => setCourseForm({ ...courseForm, googleMeetLink: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="https://meet.google.com/xxx-xxxx-xxx"
+                />
+              </div>
               </div>
 
               <div className="flex space-x-3 pt-4">
@@ -1555,7 +1603,7 @@ export default function CourseManagement() {
                   onClick={() => {
                     setShowCourseForm(false);
                     setEditingCourse(null);
-                    setCourseForm({ title: '', description: '', instructor: '', difficulty: 'BEGINNER', estimatedHours: 1, price: 0, duration: '', maxStudents: 30, status: 'ACTIVE' });
+                    setCourseForm({ title: '', description: '', instructor: '', difficulty: 'BEGINNER', estimatedHours: 1, price: 0, duration: '', maxStudents: 30, status: 'ACTIVE', enrollmentDeadline: '', accessStartDate: '', accessEndDate: '', googleMeetLink: '' });
         setFormErrors({});
                   }}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"

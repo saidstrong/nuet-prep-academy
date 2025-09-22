@@ -12,12 +12,13 @@ import AdminCourseManagement from './admin/AdminCourseManagement';
 import AdminUserManagement from './admin/AdminUserManagement';
 import AdminAnalytics from './admin/AdminAnalytics';
 import AdminSystemSettings from './admin/AdminSystemSettings';
+import EnrollmentRequestManagement from './admin/EnrollmentRequestManagement';
 
 export default function EnhancedAdminDashboard() {
   const { data: session } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'users' | 'analytics' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'users' | 'enrollment' | 'analytics' | 'settings'>('overview');
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalCourses: 0,
@@ -131,6 +132,7 @@ export default function EnhancedAdminDashboard() {
           { id: 'overview', label: 'Overview', icon: BarChart3 },
           { id: 'courses', label: 'Courses', icon: BookOpen },
           { id: 'users', label: 'Users', icon: Users },
+          { id: 'enrollment', label: 'Enrollment', icon: MessageCircle },
           { id: 'analytics', label: 'Analytics', icon: TrendingUp },
           { id: 'settings', label: 'Settings', icon: Settings }
         ].map((tab) => {
@@ -156,6 +158,7 @@ export default function EnhancedAdminDashboard() {
       {activeTab === 'overview' && <AdminOverview stats={stats} onRefresh={fetchAdminStats} />}
       {activeTab === 'courses' && <AdminCourseManagement />}
       {activeTab === 'users' && <AdminUserManagement />}
+      {activeTab === 'enrollment' && <EnrollmentRequestManagement />}
       {activeTab === 'analytics' && <AdminAnalytics />}
       {activeTab === 'settings' && <AdminSystemSettings />}
     </div>

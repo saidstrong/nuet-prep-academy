@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import ResponsiveLayout from '@/components/ResponsiveLayout';
 import EnhancedStudentDashboardV2 from '@/components/EnhancedStudentDashboardV2';
+import StudentCourseBrowser from '@/components/StudentCourseBrowser';
 
 export default function StudentDashboard() {
   const { data: session, status } = useSession();
@@ -32,7 +33,7 @@ export default function StudentDashboard() {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <ResponsiveLayout>
-        <EnhancedStudentDashboardV2 />
+        <StudentCourseBrowser />
       </ResponsiveLayout>
     </div>
   );

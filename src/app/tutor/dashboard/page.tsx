@@ -1,41 +1,13 @@
 "use client";
+
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Header from '@/components/Header';
 import ResponsiveLayout from '@/components/ResponsiveLayout';
-import EnhancedTutorDashboard from '@/components/EnhancedTutorDashboard';
+import TutorDashboard from '@/components/TutorDashboard';
 
-interface Course {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  duration: string;
-  status: string;
-  studentCount: number;
-  topics: Topic[];
-}
-
-interface Topic {
-  id: string;
-  title: string;
-  description?: string;
-  order: number;
-  materialsCount: number;
-  testsCount: number;
-}
-
-interface Student {
-  id: string;
-  name: string;
-  email: string;
-  enrolledAt: string;
-  progress: number;
-  lastActivity: string;
-}
-
-export default function TutorDashboard() {
+export default function TutorDashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -69,7 +41,7 @@ export default function TutorDashboard() {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <ResponsiveLayout>
-        <EnhancedTutorDashboard />
+        <TutorDashboard />
       </ResponsiveLayout>
     </div>
   );
