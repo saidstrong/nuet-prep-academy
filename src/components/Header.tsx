@@ -9,11 +9,13 @@ import LanguageSwitch from './LanguageSwitch';
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  const [avatarLoading, setAvatarLoading] = useState(false);
   const { data: session } = useSession();
 
   // Fetch user avatar separately to avoid session size issues
   useEffect(() => {
-    if (session?.user?.id) {
+    if (session?.user?.id && !userAvatar && !avatarLoading) {
+      setAvatarLoading(true);
       fetch('/api/user/avatar', { credentials: 'include' })
         .then(res => res.json())
         .then(data => {
@@ -21,9 +23,10 @@ export default function Header() {
             setUserAvatar(data.avatar);
           }
         })
-        .catch(err => console.error('Error fetching avatar:', err));
+        .catch(err => console.error('Error fetching avatar:', err))
+        .finally(() => setAvatarLoading(false));
     }
-  }, [session?.user?.id]);
+  }, [session?.user?.id, userAvatar, avatarLoading]);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 

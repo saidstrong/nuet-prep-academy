@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   BookOpen, 
   Clock, 
@@ -13,8 +14,11 @@ import {
   User,
   MessageCircle,
   Phone,
-  ArrowRight
+  ArrowRight,
+  ArrowLeft
 } from 'lucide-react';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import ManagerContactInfo from '@/components/ManagerContactInfo';
 
 interface Course {
@@ -35,6 +39,7 @@ interface Course {
 }
 
 export default function CoursesPage() {
+  const router = useRouter();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -77,21 +82,36 @@ export default function CoursesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Our Courses</h1>
-        <p className="text-gray-600">
-          Discover our comprehensive course catalog designed to help you achieve your learning goals.
-        </p>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header with Back Button */}
+        <div className="mb-8">
+          <div className="flex items-center space-x-4 mb-4">
+            <button
+              onClick={() => router.push('/')}
+              className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>Back to Home</span>
+            </button>
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Our Courses</h1>
+          <p className="text-gray-600">
+            Discover our comprehensive course catalog designed to help you achieve your learning goals.
+          </p>
+        </div>
 
       {/* Search and Filter */}
       <div className="mb-8">
@@ -246,6 +266,7 @@ export default function CoursesPage() {
           </a>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

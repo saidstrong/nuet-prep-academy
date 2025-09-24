@@ -391,7 +391,24 @@ export default function CourseDetailPage() {
                   >
                     Enroll for {course.title}
                   </button>
-                  <button className="w-full border border-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors">
+                  <button 
+                    onClick={() => {
+                      const courseUrl = window.location.href;
+                      navigator.clipboard.writeText(courseUrl).then(() => {
+                        alert('Course link copied to clipboard!');
+                      }).catch(() => {
+                        // Fallback for older browsers
+                        const textArea = document.createElement('textarea');
+                        textArea.value = courseUrl;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        alert('Course link copied to clipboard!');
+                      });
+                    }}
+                    className="w-full border border-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
                     <Share2 className="w-4 h-4 inline mr-2" />
                     Share Course
                   </button>

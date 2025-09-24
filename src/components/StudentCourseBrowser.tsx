@@ -51,6 +51,7 @@ export default function StudentCourseBrowser() {
   const [filterDifficulty, setFilterDifficulty] = useState('all');
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [showEnrollmentModal, setShowEnrollmentModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'available' | 'registered'>('available');
 
   useEffect(() => {
     fetchCourses();
@@ -107,6 +108,16 @@ export default function StudentCourseBrowser() {
     return matchesSearch && matchesDifficulty && course.isActive;
   });
 
+  const registeredCourses = courses.filter(course => {
+    const enrollmentStatus = getEnrollmentStatus(course.id);
+    return enrollmentStatus === 'APPROVED';
+  });
+
+  const pendingCourses = courses.filter(course => {
+    const enrollmentStatus = getEnrollmentStatus(course.id);
+    return enrollmentStatus === 'PENDING';
+  });
+
   const handleEnrollmentRequest = (course: Course) => {
     setSelectedCourse(course);
     setShowEnrollmentModal(true);
@@ -128,41 +139,69 @@ export default function StudentCourseBrowser() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Available Courses</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">My Courses</h1>
         <p className="text-gray-600">
-          Browse our comprehensive course catalog and request enrollment for courses that interest you.
+          Manage your course enrollments and browse available courses.
         </p>
-      </div>
-
-      {/* Search and Filter */}
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search courses..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-          <div className="sm:w-48">
-            <select
-              value={filterDifficulty}
-              onChange={(e) => setFilterDifficulty(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        
+        {/* Tabs */}
+        <div className="mt-6 border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('available')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'available'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
             >
-              <option value="all">All Levels</option>
-              <option value="BEGINNER">Beginner</option>
-              <option value="INTERMEDIATE">Intermediate</option>
-              <option value="ADVANCED">Advanced</option>
-            </select>
-          </div>
+              Available Courses ({filteredCourses.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('registered')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'registered'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Registered Courses ({registeredCourses.length})
+            </button>
+          </nav>
         </div>
       </div>
+
+      {/* Search and Filter - Only for Available Courses */}
+      {activeTab === 'available' && (
+        <div className="mb-8">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search courses..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div className="sm:w-48">
+              <select
+                value={filterDifficulty}
+                onChange={(e) => setFilterDifficulty(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Levels</option>
+                <option value="BEGINNER">Beginner</option>
+                <option value="INTERMEDIATE">Intermediate</option>
+                <option value="ADVANCED">Advanced</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Contact Information */}
       <div className="mb-8">
@@ -171,7 +210,7 @@ export default function StudentCourseBrowser() {
 
       {/* Courses Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredCourses.map((course) => {
+        {(activeTab === 'available' ? filteredCourses : registeredCourses).map((course) => {
           const enrollmentStatus = getEnrollmentStatus(course.id);
           
           return (
@@ -221,58 +260,79 @@ export default function StudentCourseBrowser() {
                   </div>
                 )}
 
-                {/* Action Button */}
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => handleEnrollmentRequest(course)}
-                    disabled={enrollmentStatus === 'PENDING' || enrollmentStatus === 'APPROVED'}
-                    className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-                      enrollmentStatus === 'PENDING' 
-                        ? 'bg-yellow-100 text-yellow-800 cursor-not-allowed'
-                        : enrollmentStatus === 'APPROVED'
-                        ? 'bg-green-100 text-green-800 cursor-not-allowed'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
-                  >
-                    {enrollmentStatus === 'PENDING' 
-                      ? 'Request Pending'
-                      : enrollmentStatus === 'APPROVED'
-                      ? 'Enrolled'
-                      : 'Request Enrollment'
-                    }
-                  </button>
-                  {enrollmentStatus === 'APPROVED' ? (
+                {/* Action Buttons */}
+                {activeTab === 'available' ? (
+                  <div className="flex space-x-2">
                     <button
-                      onClick={() => window.open(`/courses/${course.id}/access`, '_blank')}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      onClick={() => handleEnrollmentRequest(course)}
+                      disabled={enrollmentStatus === 'PENDING' || enrollmentStatus === 'APPROVED'}
+                      className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                        enrollmentStatus === 'PENDING' 
+                          ? 'bg-yellow-100 text-yellow-800 cursor-not-allowed'
+                          : enrollmentStatus === 'APPROVED'
+                          ? 'bg-green-100 text-green-800 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
                     >
-                      <Eye className="w-4 h-4" />
+                      {enrollmentStatus === 'PENDING' 
+                        ? 'Request Pending'
+                        : enrollmentStatus === 'APPROVED'
+                        ? 'Enrolled'
+                        : 'Request Enrollment'
+                      }
                     </button>
-                  ) : (
                     <button
                       onClick={() => window.open(`/courses/${course.id}`, '_blank')}
                       className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => window.open(`/courses/${course.id}/access`, '_blank')}
+                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center"
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      Access Course
+                    </button>
+                    <button
+                      onClick={() => window.open(`/courses/${course.id}`, '_blank')}
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           );
         })}
       </div>
 
-      {filteredCourses.length === 0 && (
+      {(activeTab === 'available' ? filteredCourses.length === 0 : registeredCourses.length === 0) && (
         <div className="text-center py-12">
           <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No courses found</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            {activeTab === 'available' ? 'No courses found' : 'No registered courses'}
+          </h3>
           <p className="text-gray-600">
-            {searchTerm || filterDifficulty !== 'all' 
-              ? 'Try adjusting your search or filter criteria.'
-              : 'No courses are currently available.'
+            {activeTab === 'available' 
+              ? (searchTerm || filterDifficulty !== 'all' 
+                  ? 'Try adjusting your search or filter criteria.'
+                  : 'No courses are currently available.')
+              : 'You haven\'t enrolled in any courses yet. Browse available courses to get started.'
             }
           </p>
+          {activeTab === 'registered' && (
+            <button
+              onClick={() => setActiveTab('available')}
+              className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Browse Available Courses
+            </button>
+          )}
         </div>
       )}
 
