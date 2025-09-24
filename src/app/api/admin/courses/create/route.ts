@@ -3,6 +3,41 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!['ADMIN', 'MANAGER', 'OWNER'].includes(session.user.role)) {
+      return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 });
+    }
+
+    // Return course creation form data or available instructors
+    return NextResponse.json({
+      success: true,
+      instructors: [
+        'Dr. Sarah Johnson',
+        'Prof. Michael Chen',
+        'Dr. Emily Rodriguez',
+        'Prof. David Kim',
+        'Dr. Lisa Wang'
+      ],
+      difficulties: ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'],
+      statuses: ['ACTIVE', 'INACTIVE', 'DRAFT']
+    });
+
+  } catch (error: any) {
+    console.error('Error fetching course creation data:', error);
+    return NextResponse.json({
+      error: 'Failed to fetch course creation data',
+      details: error.message
+    }, { status: 500 });
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

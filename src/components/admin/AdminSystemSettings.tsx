@@ -231,7 +231,7 @@ export default function AdminSystemSettings() {
                 <label className="block text-sm font-medium text-slate-700 mb-2">Site URL</label>
                 <input
                   type="url"
-                  value={settings.general.siteUrl}
+                  value={settings?.general?.siteUrl || 'https://nuet-prep.com'}
                   onChange={(e) => updateSetting('general', 'siteUrl', e.target.value)}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -240,7 +240,7 @@ export default function AdminSystemSettings() {
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-slate-700 mb-2">Site Description</label>
                 <textarea
-                  value={settings.general.siteDescription}
+                  value={settings?.general?.siteDescription || 'Online learning platform for NUET preparation'}
                   onChange={(e) => updateSetting('general', 'siteDescription', e.target.value)}
                   rows={3}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
