@@ -1,575 +1,742 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Plus, Trash2, ChevronUp, ChevronDown, Save, X, CheckCircle, Circle, FileText, Edit2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { 
+  Plus, 
+  Trash2, 
+  Edit2, 
+  Save, 
+  X, 
+  Clock, 
+  Target, 
+  BookOpen,
+  CheckCircle,
+  AlertCircle,
+  ArrowUp,
+  ArrowDown,
+  Copy,
+  Eye,
+  EyeOff
+} from 'lucide-react';
 
 interface Question {
   id: string;
-  questionText: string;
-  type: 'singleChoice' | 'multipleChoice' | 'shortAnswer';
-  options?: string[];
-  correctOptions?: number[];
-  correctAnswer?: string;
+  question: string;
+  type: 'MULTIPLE_CHOICE' | 'SINGLE_CHOICE' | 'SHORT_ANSWER' | 'ESSAY' | 'TRUE_FALSE';
+  options: string[];
+  correctAnswer: string | number[];
+  points: number;
+  order: number;
+  explanation?: string;
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  timeLimit?: number; // in seconds
+  tags?: string[];
 }
 
 interface Test {
-  id: string;
-  name: string;
+  id?: string;
+  title: string;
+  description: string;
+  duration: number; // in minutes
+  totalPoints: number;
+  passingScore: number; // percentage
+  maxAttempts: number;
+  isActive: boolean;
+  isRandomized: boolean;
+  showResults: boolean;
+  allowReview: boolean;
   questions: Question[];
+  instructions?: string;
+  prerequisites?: string[];
 }
 
 interface TestBuilderProps {
-  test?: Test;
   topicId: string;
-  subtopicId?: string;
-  onClose: () => void;
+  topicTitle: string;
+  courseTitle: string;
   onSave: (test: Test) => void;
+  onCancel: () => void;
+  existingTest?: Test;
 }
 
-export default function TestBuilder({ test, topicId, subtopicId, onClose, onSave }: TestBuilderProps) {
-  const [testData, setTestData] = useState<Test>(test || {
-    id: `test-${Date.now()}`,
-    name: 'New Test',
-    questions: []
+export default function TestBuilder({ 
+  topicId, 
+  topicTitle, 
+  courseTitle, 
+  onSave, 
+  onCancel, 
+  existingTest 
+}: TestBuilderProps) {
+  const [test, setTest] = useState<Test>(existingTest || {
+    title: '',
+    description: '',
+    duration: 60,
+    totalPoints: 100,
+    passingScore: 70,
+    maxAttempts: 3,
+    isActive: true,
+    isRandomized: false,
+    showResults: true,
+    allowReview: true,
+    questions: [],
+    instructions: '',
+    prerequisites: []
   });
 
-  const [editingQuestion, setEditingQuestion] = useState<string | null>(null);
-  const [newQuestionText, setNewQuestionText] = useState('');
-  const [newQuestionType, setNewQuestionType] = useState<'singleChoice' | 'multipleChoice' | 'shortAnswer'>('singleChoice');
-  const [newQuestionOptions, setNewQuestionOptions] = useState<string[]>(['']);
-  const [newQuestionCorrectAnswer, setNewQuestionCorrectAnswer] = useState('');
-  const [newQuestionCorrectOptions, setNewQuestionCorrectOptions] = useState<number[]>([]);
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [showQuestionForm, setShowQuestionForm] = useState(false);
+  const [questionForm, setQuestionForm] = useState<Partial<Question>>({
+    question: '',
+    type: 'MULTIPLE_CHOICE',
+    options: ['', '', '', ''],
+    correctAnswer: '',
+    points: 10,
+    order: 1,
+    explanation: '',
+    difficulty: 'MEDIUM',
+    timeLimit: 60,
+    tags: []
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  useEffect(() => {
+    if (existingTest) {
+      setTest(existingTest);
+    }
+  }, [existingTest]);
 
   const addQuestion = () => {
-    if (!newQuestionText.trim()) return;
-
-    const newQuestion: Question = {
-      id: `question-${Date.now()}`,
-      questionText: newQuestionText.trim(),
-      type: newQuestionType,
-      options: newQuestionType !== 'shortAnswer' ? newQuestionOptions.filter(opt => opt.trim()) : undefined,
-      correctOptions: newQuestionType !== 'shortAnswer' ? newQuestionCorrectOptions : undefined,
-      correctAnswer: newQuestionType === 'shortAnswer' ? newQuestionCorrectAnswer : undefined
-    };
-
-    setTestData(prev => ({
-      ...prev,
-      questions: [...prev.questions, newQuestion]
-    }));
-
-    // Reset form
-    setNewQuestionText('');
-    setNewQuestionType('singleChoice');
-    setNewQuestionOptions(['']);
-    setNewQuestionCorrectAnswer('');
-    setNewQuestionCorrectOptions([]);
+    setQuestionForm({
+      question: '',
+      type: 'MULTIPLE_CHOICE',
+      options: ['', '', '', ''],
+      correctAnswer: '',
+      points: 10,
+      order: test.questions.length + 1,
+      explanation: '',
+      difficulty: 'MEDIUM',
+      timeLimit: 60,
+      tags: []
+    });
     setEditingQuestion(null);
+    setShowQuestionForm(true);
   };
 
-  const updateQuestion = (questionId: string, updates: Partial<Question>) => {
-    setTestData(prev => ({
-      ...prev,
-      questions: prev.questions.map(q => 
-        q.id === questionId ? { ...q, ...updates } : q
-      )
-    }));
+  const editQuestion = (question: Question) => {
+    setQuestionForm({
+      ...question,
+      options: [...question.options]
+    });
+    setEditingQuestion(question);
+    setShowQuestionForm(true);
+  };
+
+  const saveQuestion = () => {
+    if (!questionForm.question?.trim()) {
+      setError('Question text is required');
+      return;
+    }
+
+    if (questionForm.type === 'MULTIPLE_CHOICE' || questionForm.type === 'SINGLE_CHOICE') {
+      if (!questionForm.options?.some(opt => opt.trim())) {
+        setError('At least one option is required for multiple choice questions');
+        return;
+      }
+    }
+
+    if (!questionForm.correctAnswer) {
+      setError('Correct answer is required');
+      return;
+    }
+
+    const newQuestion: Question = {
+      id: editingQuestion?.id || `q-${Date.now()}`,
+      question: questionForm.question,
+      type: questionForm.type as Question['type'],
+      options: questionForm.options || [],
+      correctAnswer: questionForm.correctAnswer,
+      points: questionForm.points || 10,
+      order: questionForm.order || test.questions.length + 1,
+      explanation: questionForm.explanation,
+      difficulty: questionForm.difficulty as Question['difficulty'],
+      timeLimit: questionForm.timeLimit,
+      tags: questionForm.tags || []
+    };
+
+    if (editingQuestion) {
+      setTest(prev => ({
+        ...prev,
+        questions: prev.questions.map(q => q.id === editingQuestion.id ? newQuestion : q)
+      }));
+    } else {
+      setTest(prev => ({
+        ...prev,
+        questions: [...prev.questions, newQuestion]
+      }));
+    }
+
+    setShowQuestionForm(false);
+    setEditingQuestion(null);
+    setError('');
   };
 
   const deleteQuestion = (questionId: string) => {
-    setTestData(prev => ({
+    setTest(prev => ({
       ...prev,
       questions: prev.questions.filter(q => q.id !== questionId)
     }));
   };
 
   const moveQuestion = (questionId: string, direction: 'up' | 'down') => {
-    setTestData(prev => {
-      const questions = [...prev.questions];
-      const index = questions.findIndex(q => q.id === questionId);
-      
-      if (direction === 'up' && index > 0) {
-        [questions[index], questions[index - 1]] = [questions[index - 1], questions[index]];
-      } else if (direction === 'down' && index < questions.length - 1) {
-        [questions[index], questions[index + 1]] = [questions[index + 1], questions[index]];
+    const questions = [...test.questions];
+    const index = questions.findIndex(q => q.id === questionId);
+    
+    if (direction === 'up' && index > 0) {
+      [questions[index], questions[index - 1]] = [questions[index - 1], questions[index]];
+    } else if (direction === 'down' && index < questions.length - 1) {
+      [questions[index], questions[index + 1]] = [questions[index + 1], questions[index]];
+    }
+
+    setTest(prev => ({
+      ...prev,
+      questions: questions.map((q, i) => ({ ...q, order: i + 1 }))
+    }));
+  };
+
+  const duplicateQuestion = (question: Question) => {
+    const newQuestion: Question = {
+      ...question,
+      id: `q-${Date.now()}`,
+      order: test.questions.length + 1
+    };
+    setTest(prev => ({
+      ...prev,
+      questions: [...prev.questions, newQuestion]
+    }));
+  };
+
+  const handleSaveTest = async () => {
+    if (!test.title.trim()) {
+      setError('Test title is required');
+      return;
+    }
+
+    if (test.questions.length === 0) {
+      setError('At least one question is required');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/admin/courses/tests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          topicId,
+          ...test,
+          totalPoints: test.questions.reduce((sum, q) => sum + q.points, 0)
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setSuccess('Test saved successfully!');
+        setTimeout(() => {
+          onSave(result.test);
+        }, 1500);
+      } else {
+        setError(result.error || 'Failed to save test');
       }
-      
-      return { ...prev, questions };
-    });
-  };
-
-  const addOption = (questionId: string) => {
-    updateQuestion(questionId, {
-      options: [...(testData.questions.find(q => q.id === questionId)?.options || []), '']
-    });
-  };
-
-  const updateOption = (questionId: string, optionIndex: number, value: string) => {
-    const question = testData.questions.find(q => q.id === questionId);
-    if (!question?.options) return;
-
-    const newOptions = [...question.options];
-    newOptions[optionIndex] = value;
-    updateQuestion(questionId, { options: newOptions });
-  };
-
-  const removeOption = (questionId: string, optionIndex: number) => {
-    const question = testData.questions.find(q => q.id === questionId);
-    if (!question?.options || question.options.length <= 1) return;
-
-    const newOptions = question.options.filter((_, index) => index !== optionIndex);
-    const newCorrectOptions = question.correctOptions?.filter(opt => opt !== optionIndex)
-      .map(opt => opt > optionIndex ? opt - 1 : opt) || [];
-    
-    updateQuestion(questionId, { 
-      options: newOptions,
-      correctOptions: newCorrectOptions
-    });
-  };
-
-  const toggleCorrectOption = (questionId: string, optionIndex: number) => {
-    const question = testData.questions.find(q => q.id === questionId);
-    if (!question?.correctOptions) return;
-
-    const newCorrectOptions = question.correctOptions.includes(optionIndex)
-      ? question.correctOptions.filter(opt => opt !== optionIndex)
-      : [...question.correctOptions, optionIndex];
-    
-    updateQuestion(questionId, { correctOptions: newCorrectOptions });
-  };
-
-  const handleSave = () => {
-    if (!testData.name.trim()) {
-      alert('Please enter a test name');
-      return;
+    } catch (error: any) {
+      setError('Network error: ' + error.message);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    if (testData.questions.length === 0) {
-      alert('Please add at least one question');
-      return;
+  const getQuestionTypeIcon = (type: string) => {
+    switch (type) {
+      case 'MULTIPLE_CHOICE': return '☑️';
+      case 'SINGLE_CHOICE': return '☑️';
+      case 'SHORT_ANSWER': return '📝';
+      case 'ESSAY': return '📄';
+      case 'TRUE_FALSE': return '✅';
+      default: return '❓';
     }
+  };
 
-    onSave(testData);
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case 'EASY': return 'text-green-600 bg-green-100';
+      case 'MEDIUM': return 'text-yellow-600 bg-yellow-100';
+      case 'HARD': return 'text-red-600 bg-red-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div className="flex-1">
+    <div className="max-w-6xl mx-auto p-6 bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Test Builder</h1>
+          <p className="text-gray-600">
+            {courseTitle} → {topicTitle}
+          </p>
+        </div>
+        <div className="flex space-x-3">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSaveTest}
+            disabled={loading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
+          >
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Saving...</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                <span>Save Test</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
+          <AlertCircle className="w-5 h-5 text-red-600" />
+          <span className="text-red-800">{error}</span>
+        </div>
+      )}
+
+      {success && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-2">
+          <CheckCircle className="w-5 h-5 text-green-600" />
+          <span className="text-green-800">{success}</span>
+        </div>
+      )}
+
+      {/* Test Settings */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Test Title *
+            </label>
             <input
               type="text"
-              value={testData.name}
-              onChange={(e) => setTestData(prev => ({ ...prev, name: e.target.value }))}
-              className="text-xl font-semibold bg-transparent border-none outline-none w-full"
-              placeholder="Enter test name"
+              value={test.title}
+              onChange={(e) => setTest(prev => ({ ...prev, title: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter test title"
             />
           </div>
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Save Test
-            </button>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description
+            </label>
+            <textarea
+              value={test.description}
+              onChange={(e) => setTest(prev => ({ ...prev, description: e.target.value }))}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Describe what this test covers"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Instructions
+            </label>
+            <textarea
+              value={test.instructions || ''}
+              onChange={(e) => setTest(prev => ({ ...prev, instructions: e.target.value }))}
+              rows={2}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Special instructions for students"
+            />
           </div>
         </div>
 
-        <div className="flex h-[calc(90vh-120px)]">
-          {/* Questions List */}
-          <div className="w-1/2 border-r border-gray-200 overflow-y-auto">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Questions ({testData.questions.length})</h3>
-              
-              {/* Add Question Button */}
-              <button
-                onClick={() => setEditingQuestion('new')}
-                className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors mb-4"
-              >
-                <Plus className="w-5 h-5 mx-auto mb-2" />
-                Add Question
-              </button>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Clock className="w-4 h-4 inline mr-1" />
+                Duration (minutes)
+              </label>
+              <input
+                type="number"
+                value={test.duration}
+                onChange={(e) => setTest(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                min="1"
+              />
+            </div>
 
-              {/* New Question Form */}
-              {editingQuestion === 'new' && (
-                <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 mb-4">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Question Text *
-                      </label>
-                      <textarea
-                        value={newQuestionText}
-                        onChange={(e) => setNewQuestionText(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        rows={3}
-                        placeholder="Enter your question"
-                      />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Target className="w-4 h-4 inline mr-1" />
+                Passing Score (%)
+              </label>
+              <input
+                type="number"
+                value={test.passingScore}
+                onChange={(e) => setTest(prev => ({ ...prev, passingScore: parseInt(e.target.value) }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                min="0"
+                max="100"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Max Attempts
+            </label>
+            <input
+              type="number"
+              value={test.maxAttempts}
+              onChange={(e) => setTest(prev => ({ ...prev, maxAttempts: parseInt(e.target.value) }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              min="1"
+            />
+          </div>
+
+          <div className="space-y-3">
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={test.isActive}
+                onChange={(e) => setTest(prev => ({ ...prev, isActive: e.target.checked }))}
+                className="rounded"
+              />
+              <span className="text-sm text-gray-700">Test is active</span>
+            </label>
+
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={test.isRandomized}
+                onChange={(e) => setTest(prev => ({ ...prev, isRandomized: e.target.checked }))}
+                className="rounded"
+              />
+              <span className="text-sm text-gray-700">Randomize question order</span>
+            </label>
+
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={test.showResults}
+                onChange={(e) => setTest(prev => ({ ...prev, showResults: e.target.checked }))}
+                className="rounded"
+              />
+              <span className="text-sm text-gray-700">Show results immediately</span>
+            </label>
+
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={test.allowReview}
+                onChange={(e) => setTest(prev => ({ ...prev, allowReview: e.target.checked }))}
+                className="rounded"
+              />
+              <span className="text-sm text-gray-700">Allow answer review</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* Questions Section */}
+      <div className="border-t border-gray-200 pt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Questions ({test.questions.length})
+          </h2>
+          <button
+            onClick={addQuestion}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Question</span>
+          </button>
+        </div>
+
+        {test.questions.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <BookOpen className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <p>No questions added yet. Click "Add Question" to get started.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {test.questions.map((question, index) => (
+              <div key={question.id} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <span className="text-sm font-medium text-gray-500">
+                        Q{index + 1}
+                      </span>
+                      <span className="text-lg">{getQuestionTypeIcon(question.type)}</span>
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getDifficultyColor(question.difficulty)}`}>
+                        {question.difficulty}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        {question.points} points
+                      </span>
+                      {question.timeLimit && (
+                        <span className="text-sm text-gray-500">
+                          {question.timeLimit}s
+                        </span>
+                      )}
                     </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Question Type *
-                      </label>
-                      <select
-                        value={newQuestionType}
-                        onChange={(e) => {
-                          setNewQuestionType(e.target.value as any);
-                          if (e.target.value === 'shortAnswer') {
-                            setNewQuestionOptions(['']);
-                            setNewQuestionCorrectOptions([]);
-                          } else {
-                            setNewQuestionCorrectAnswer('');
-                          }
-                        }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="singleChoice">Single Choice</option>
-                        <option value="multipleChoice">Multiple Choice</option>
-                        <option value="shortAnswer">Short Answer</option>
-                      </select>
-                    </div>
-
-                    {/* Options for choice questions */}
-                    {newQuestionType !== 'shortAnswer' && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Answer Options *
-                        </label>
-                        <div className="space-y-2">
-                          {newQuestionOptions.map((option, index) => (
-                            <div key={index} className="flex items-center space-x-2">
-                              <input
-                                type="text"
-                                value={option}
-                                onChange={(e) => {
-                                  const newOptions = [...newQuestionOptions];
-                                  newOptions[index] = e.target.value;
-                                  setNewQuestionOptions(newOptions);
-                                }}
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder={`Option ${index + 1}`}
-                              />
-                              <button
-                                onClick={() => {
-                                  const newOptions = newQuestionOptions.filter((_, i) => i !== index);
-                                  setNewQuestionOptions(newOptions);
-                                }}
-                                className="p-2 text-red-600 hover:bg-red-100 rounded"
-                                disabled={newQuestionOptions.length <= 1}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ))}
-                          <button
-                            onClick={() => setNewQuestionOptions([...newQuestionOptions, ''])}
-                            className="flex items-center px-3 py-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
-                          >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add Option
-                          </button>
-                        </div>
-
-                        {/* Correct Answer Selection */}
-                        <div className="mt-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Correct Answer{newQuestionType === 'multipleChoice' ? 's' : ''} *
-                          </label>
-                          <div className="space-y-2">
-                            {newQuestionOptions.map((option, index) => (
-                              <label key={index} className="flex items-center space-x-2 cursor-pointer">
-                                <input
-                                  type={newQuestionType === 'singleChoice' ? 'radio' : 'checkbox'}
-                                  name="correctAnswer"
-                                  checked={newQuestionCorrectOptions.includes(index)}
-                                  onChange={() => {
-                                    if (newQuestionType === 'singleChoice') {
-                                      setNewQuestionCorrectOptions([index]);
-                                    } else {
-                                      const newCorrect = newQuestionCorrectOptions.includes(index)
-                                        ? newQuestionCorrectOptions.filter(opt => opt !== index)
-                                        : [...newQuestionCorrectOptions, index];
-                                      setNewQuestionCorrectOptions(newCorrect);
-                                    }
-                                  }}
-                                  className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                                />
-                                <span className="text-sm text-gray-700">{option || `Option ${index + 1}`}</span>
-                              </label>
-                            ))}
+                    <p className="text-gray-900 mb-2">{question.question}</p>
+                    {question.options.length > 0 && (
+                      <div className="ml-4 space-y-1">
+                        {question.options.map((option, optIndex) => (
+                          <div key={optIndex} className="text-sm text-gray-600">
+                            {String.fromCharCode(65 + optIndex)}. {option}
                           </div>
-                        </div>
+                        ))}
                       </div>
                     )}
-
-                    {/* Correct Answer for short answer */}
-                    {newQuestionType === 'shortAnswer' && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Correct Answer *
-                        </label>
-                        <input
-                          type="text"
-                          value={newQuestionCorrectAnswer}
-                          onChange={(e) => setNewQuestionCorrectAnswer(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Enter the correct answer"
-                        />
+                    {question.explanation && (
+                      <div className="mt-2 p-2 bg-blue-50 rounded text-sm text-blue-800">
+                        <strong>Explanation:</strong> {question.explanation}
                       </div>
                     )}
-
-                    <div className="flex justify-end space-x-3">
-                      <button
-                        onClick={() => {
-                          setEditingQuestion(null);
-                          setNewQuestionText('');
-                          setNewQuestionType('singleChoice');
-                          setNewQuestionOptions(['']);
-                          setNewQuestionCorrectAnswer('');
-                          setNewQuestionCorrectOptions([]);
-                        }}
-                        className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={addQuestion}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                      >
-                        Add Question
-                      </button>
-                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2 ml-4">
+                    <button
+                      onClick={() => moveQuestion(question.id, 'up')}
+                      disabled={index === 0}
+                      className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                    >
+                      <ArrowUp className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => moveQuestion(question.id, 'down')}
+                      disabled={index === test.questions.length - 1}
+                      className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                    >
+                      <ArrowDown className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => duplicateQuestion(question)}
+                      className="p-1 text-gray-400 hover:text-gray-600"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => editQuestion(question)}
+                      className="p-1 text-gray-400 hover:text-gray-600"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => deleteQuestion(question.id)}
+                      className="p-1 text-red-400 hover:text-red-600"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-              )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
-              {/* Questions List */}
-              <div className="space-y-3">
-                {testData.questions.map((question, index) => (
-                  <QuestionCard
-                    key={question.id}
-                    question={question}
-                    index={index}
-                    totalQuestions={testData.questions.length}
-                    onUpdate={updateQuestion}
-                    onDelete={deleteQuestion}
-                    onMove={moveQuestion}
-                    onAddOption={addOption}
-                    onUpdateOption={updateOption}
-                    onRemoveOption={removeOption}
-                    onToggleCorrectOption={toggleCorrectOption}
-                  />
-                ))}
+      {/* Question Form Modal */}
+      {showQuestionForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              {editingQuestion ? 'Edit Question' : 'Add New Question'}
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Question Text *
+                </label>
+                <textarea
+                  value={questionForm.question || ''}
+                  onChange={(e) => setQuestionForm(prev => ({ ...prev, question: e.target.value }))}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter your question"
+                />
               </div>
 
-              {testData.questions.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p>No questions yet. Click "Add Question" to get started.</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Question Type
+                  </label>
+                  <select
+                    value={questionForm.type}
+                    onChange={(e) => setQuestionForm(prev => ({ 
+                      ...prev, 
+                      type: e.target.value as Question['type'],
+                      options: e.target.value === 'MULTIPLE_CHOICE' || e.target.value === 'SINGLE_CHOICE' 
+                        ? ['', '', '', ''] 
+                        : []
+                    }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="MULTIPLE_CHOICE">Multiple Choice</option>
+                    <option value="SINGLE_CHOICE">Single Choice</option>
+                    <option value="SHORT_ANSWER">Short Answer</option>
+                    <option value="ESSAY">Essay</option>
+                    <option value="TRUE_FALSE">True/False</option>
+                  </select>
                 </div>
-              )}
-            </div>
-          </div>
 
-          {/* Preview */}
-          <div className="w-1/2 p-6 bg-gray-50 overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">Preview</h3>
-            <div className="space-y-6">
-              {testData.questions.map((question, index) => (
-                <div key={question.id} className="bg-white p-4 rounded-lg border border-gray-200">
-                  <h4 className="font-medium text-gray-900 mb-3">
-                    {index + 1}. {question.questionText}
-                  </h4>
-                  
-                  {question.type === 'shortAnswer' ? (
-                    <div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Difficulty
+                  </label>
+                  <select
+                    value={questionForm.difficulty}
+                    onChange={(e) => setQuestionForm(prev => ({ ...prev, difficulty: e.target.value as Question['difficulty'] }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="EASY">Easy</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HARD">Hard</option>
+                  </select>
+                </div>
+              </div>
+
+              {(questionForm.type === 'MULTIPLE_CHOICE' || questionForm.type === 'SINGLE_CHOICE') && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Answer Options
+                  </label>
+                  {questionForm.options?.map((option, index) => (
+                    <div key={index} className="flex items-center space-x-2 mb-2">
+                      <span className="text-sm font-medium text-gray-500 w-6">
+                        {String.fromCharCode(65 + index)}.
+                      </span>
                       <input
                         type="text"
-                        placeholder="Your answer..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        disabled
+                        value={option}
+                        onChange={(e) => {
+                          const newOptions = [...(questionForm.options || [])];
+                          newOptions[index] = e.target.value;
+                          setQuestionForm(prev => ({ ...prev, options: newOptions }));
+                        }}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder={`Option ${String.fromCharCode(65 + index)}`}
                       />
-                      <p className="text-sm text-gray-500 mt-2">
-                        Correct answer: {question.correctAnswer}
-                      </p>
                     </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {question.options?.map((option, optionIndex) => (
-                        <label key={optionIndex} className="flex items-center space-x-2 cursor-pointer">
-                          <input
-                            type={question.type === 'singleChoice' ? 'radio' : 'checkbox'}
-                            name={`question-${question.id}`}
-                            disabled
-                            className="w-4 h-4 text-blue-600"
-                          />
-                          <span className="text-sm text-gray-700">{option}</span>
-                          {question.correctOptions?.includes(optionIndex) && (
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                          )}
-                        </label>
-                      ))}
-                    </div>
-                  )}
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+              )}
 
-// Question Card Component
-interface QuestionCardProps {
-  question: Question;
-  index: number;
-  totalQuestions: number;
-  onUpdate: (questionId: string, updates: Partial<Question>) => void;
-  onDelete: (questionId: string) => void;
-  onMove: (questionId: string, direction: 'up' | 'down') => void;
-  onAddOption: (questionId: string) => void;
-  onUpdateOption: (questionId: string, optionIndex: number, value: string) => void;
-  onRemoveOption: (questionId: string, optionIndex: number) => void;
-  onToggleCorrectOption: (questionId: string, optionIndex: number) => void;
-}
-
-function QuestionCard({
-  question,
-  index,
-  totalQuestions,
-  onUpdate,
-  onDelete,
-  onMove,
-  onAddOption,
-  onUpdateOption,
-  onRemoveOption,
-  onToggleCorrectOption
-}: QuestionCardProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(question.questionText);
-
-  const handleSave = () => {
-    if (editText.trim()) {
-      onUpdate(question.id, { questionText: editText.trim() });
-      setIsEditing(false);
-    }
-  };
-
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => onMove(question.id, 'up')}
-            disabled={index === 0}
-            className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30"
-          >
-            <ChevronUp className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => onMove(question.id, 'down')}
-            disabled={index === totalQuestions - 1}
-            className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30"
-          >
-            <ChevronDown className="w-4 h-4" />
-          </button>
-          <span className="text-sm font-medium text-gray-500">Q{index + 1}</span>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setIsEditing(true)}
-            className="p-1 text-gray-600 hover:bg-gray-100 rounded"
-          >
-            <Edit2 className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => onDelete(question.id)}
-            className="p-1 text-red-600 hover:bg-red-100 rounded"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {isEditing ? (
-        <div className="space-y-3">
-          <textarea
-            value={editText}
-            onChange={(e) => setEditText(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            rows={2}
-            autoFocus
-          />
-          <div className="flex justify-end space-x-2">
-            <button
-              onClick={() => {
-                setIsEditing(false);
-                setEditText(question.questionText);
-              }}
-              className="px-3 py-1 text-sm text-gray-600 bg-gray-100 rounded hover:bg-gray-200"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Save
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div>
-          <p className="text-sm text-gray-900 mb-3">{question.questionText}</p>
-          
-          {question.type === 'shortAnswer' ? (
-            <div>
-              <input
-                type="text"
-                placeholder="Your answer..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                disabled
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Correct: {question.correctAnswer}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {question.options?.map((option, optionIndex) => (
-                <div key={optionIndex} className="flex items-center space-x-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Correct Answer *
+                </label>
+                {questionForm.type === 'MULTIPLE_CHOICE' || questionForm.type === 'SINGLE_CHOICE' ? (
+                  <select
+                    value={questionForm.correctAnswer as string}
+                    onChange={(e) => setQuestionForm(prev => ({ ...prev, correctAnswer: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select correct answer</option>
+                    {questionForm.options?.map((option, index) => (
+                      <option key={index} value={option}>
+                        {String.fromCharCode(65 + index)}. {option}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
                   <input
-                    type={question.type === 'singleChoice' ? 'radio' : 'checkbox'}
-                    name={`question-${question.id}`}
-                    disabled
-                    className="w-4 h-4 text-blue-600"
+                    type="text"
+                    value={questionForm.correctAnswer as string}
+                    onChange={(e) => setQuestionForm(prev => ({ ...prev, correctAnswer: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter correct answer"
                   />
-                  <span className="text-sm text-gray-700 flex-1">{option}</span>
-                  {question.correctOptions?.includes(optionIndex) && (
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                  )}
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Points
+                  </label>
+                  <input
+                    type="number"
+                    value={questionForm.points}
+                    onChange={(e) => setQuestionForm(prev => ({ ...prev, points: parseInt(e.target.value) }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="1"
+                  />
                 </div>
-              ))}
-              
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Time Limit (seconds)
+                  </label>
+                  <input
+                    type="number"
+                    value={questionForm.timeLimit}
+                    onChange={(e) => setQuestionForm(prev => ({ ...prev, timeLimit: parseInt(e.target.value) }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Explanation (optional)
+                </label>
+                <textarea
+                  value={questionForm.explanation || ''}
+                  onChange={(e) => setQuestionForm(prev => ({ ...prev, explanation: e.target.value }))}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Explain why this is the correct answer"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
               <button
-                onClick={() => onAddOption(question.id)}
-                className="flex items-center text-xs text-blue-600 hover:text-blue-700 mt-2"
+                onClick={() => setShowQuestionForm(false)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                <Plus className="w-3 h-3 mr-1" />
-                Add Option
+                Cancel
+              </button>
+              <button
+                onClick={saveQuestion}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                {editingQuestion ? 'Update Question' : 'Add Question'}
               </button>
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>
