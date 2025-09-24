@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import courseStorage from '@/lib/courseStorage';
 
 export async function GET() {
   try {
@@ -85,30 +86,38 @@ export async function POST(request: NextRequest) {
     try {
       await prisma.$connect();
     } catch (dbError: any) {
-      console.error('❌ Database connection failed, using mock course creation:', dbError);
+      console.error('❌ Database connection failed, using temporary storage:', dbError);
+      
+      // Create course with temporary storage
+      const courseId = `course-${Date.now()}`;
+      const newCourse = {
+        id: courseId,
+        title,
+        description,
+        instructor,
+        difficulty: difficulty || 'INTERMEDIATE',
+        estimatedHours: estimatedHours || 40,
+        price: price || 50000,
+        duration: duration || '8 weeks',
+        maxStudents: maxStudents || 30,
+        status,
+        isActive,
+        enrollmentDeadline,
+        accessStartDate,
+        accessEndDate,
+        googleMeetLink,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      // Store in temporary storage
+      courseStorage.storeCourse(newCourse);
+
       return NextResponse.json({
         success: true,
-        course: {
-          id: `mock-${Date.now()}`,
-          title,
-          description,
-          instructor,
-          difficulty: difficulty || 'INTERMEDIATE',
-          estimatedHours: estimatedHours || 40,
-          price: price || 50000,
-          duration: duration || '8 weeks',
-          maxStudents: maxStudents || 30,
-          status,
-          isActive,
-          enrollmentDeadline,
-          accessStartDate,
-          accessEndDate,
-          googleMeetLink,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        },
-        source: 'mock',
-        message: 'Course created successfully (using mock data due to database issues)'
+        course: newCourse,
+        source: 'temporary_storage',
+        message: 'Course created successfully (using temporary storage due to database issues)'
       });
     }
 

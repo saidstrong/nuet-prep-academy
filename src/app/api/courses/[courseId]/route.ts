@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import courseStorage from '@/lib/courseStorage';
 
 export async function GET(
   request: Request,
@@ -11,7 +12,95 @@ export async function GET(
     const courseId = params.courseId;
     console.log(`🔍 Course detail API called for courseId: ${courseId}`);
 
-    // Mock course data to avoid database issues
+    // Try database first
+    try {
+      await prisma.$connect();
+      
+      const course = await prisma.course.findUnique({
+        where: { id: courseId },
+        include: {
+          topics: {
+            orderBy: { order: 'asc' }
+          },
+          _count: {
+            select: {
+              topics: true,
+              materials: true,
+              tests: true,
+              enrollments: true
+            }
+          }
+        }
+      });
+
+      if (course) {
+        console.log(`✅ Found course in database: ${course.title}`);
+        
+        const courseData = {
+          id: course.id,
+          title: course.title,
+          description: course.description,
+          instructor: course.instructor,
+          difficulty: course.difficulty,
+          estimatedHours: course.estimatedHours,
+          price: course.price,
+          duration: course.duration,
+          maxStudents: course.maxStudents,
+          status: course.status,
+          isActive: course.isActive,
+          createdAt: course.createdAt.toISOString(),
+          updatedAt: course.updatedAt.toISOString(),
+          topics: course.topics || [],
+          totalTopics: course._count.topics,
+          totalMaterials: course._count.materials,
+          totalTests: course._count.tests,
+          enrolledStudents: course._count.enrollments,
+          isEnrolled: false,
+          isFavorite: false,
+          isBookmarked: false,
+          rating: 4.5,
+          reviews: 0
+        };
+
+        return NextResponse.json({
+          success: true,
+          course: courseData,
+          topics: courseData.topics,
+          source: 'database'
+        });
+      }
+    } catch (dbError: any) {
+      console.log('❌ Database error, checking temporary storage:', dbError.message);
+    }
+
+    // Check temporary storage for newly created courses
+    const tempCourse = courseStorage.getCourse(courseId);
+    if (tempCourse) {
+      console.log(`✅ Found course in temporary storage: ${tempCourse.title}`);
+      
+      const courseData = {
+        ...tempCourse,
+        topics: [],
+        totalTopics: 0,
+        totalMaterials: 0,
+        totalTests: 0,
+        enrolledStudents: 0,
+        isEnrolled: false,
+        isFavorite: false,
+        isBookmarked: false,
+        rating: 4.5,
+        reviews: 0
+      };
+
+      return NextResponse.json({
+        success: true,
+        course: courseData,
+        topics: courseData.topics,
+        source: 'temporary_storage'
+      });
+    }
+
+    // Fallback to mock courses for predefined courses
     const mockCourses = {
       'course-1': {
         id: 'course-1',
@@ -35,9 +124,12 @@ export async function GET(
         totalTopics: 3,
         totalMaterials: 0,
         totalTests: 0,
+        enrolledStudents: 0,
         isEnrolled: false,
         isFavorite: false,
-        isBookmarked: false
+        isBookmarked: false,
+        rating: 4.5,
+        reviews: 0
       },
       'course-2': {
         id: 'course-2',
@@ -60,9 +152,12 @@ export async function GET(
         totalTopics: 2,
         totalMaterials: 0,
         totalTests: 0,
+        enrolledStudents: 0,
         isEnrolled: false,
         isFavorite: false,
-        isBookmarked: false
+        isBookmarked: false,
+        rating: 4.5,
+        reviews: 0
       },
       'course-3': {
         id: 'course-3',
@@ -86,9 +181,12 @@ export async function GET(
         totalTopics: 3,
         totalMaterials: 0,
         totalTests: 0,
+        enrolledStudents: 0,
         isEnrolled: false,
         isFavorite: false,
-        isBookmarked: false
+        isBookmarked: false,
+        rating: 4.5,
+        reviews: 0
       },
       'course-4': {
         id: 'course-4',
@@ -111,9 +209,12 @@ export async function GET(
         totalTopics: 2,
         totalMaterials: 0,
         totalTests: 0,
+        enrolledStudents: 0,
         isEnrolled: false,
         isFavorite: false,
-        isBookmarked: false
+        isBookmarked: false,
+        rating: 4.5,
+        reviews: 0
       },
       'course-5': {
         id: 'course-5',
@@ -137,27 +238,32 @@ export async function GET(
         totalTopics: 3,
         totalMaterials: 0,
         totalTests: 0,
+        enrolledStudents: 0,
         isEnrolled: false,
         isFavorite: false,
-        isBookmarked: false
+        isBookmarked: false,
+        rating: 4.5,
+        reviews: 0
       }
     };
 
     const course = mockCourses[courseId as keyof typeof mockCourses];
 
     if (!course) {
+      console.log(`❌ Course not found: ${courseId}`);
       return NextResponse.json(
         { error: 'Course not found' },
         { status: 404 }
       );
     }
 
-    console.log(`✅ Returning course details for: ${course.title}`);
+    console.log(`✅ Returning mock course details for: ${course.title}`);
 
     return NextResponse.json({
       success: true,
       course: course,
-      topics: course.topics
+      topics: course.topics,
+      source: 'mock'
     });
 
   } catch (error: any) {
