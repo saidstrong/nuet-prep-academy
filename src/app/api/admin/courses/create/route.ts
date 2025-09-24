@@ -5,14 +5,17 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
+    console.log('📋 Course creation GET request received');
     const session = await getServerSession(authOptions);
+    console.log('📋 Session:', session ? 'Found' : 'Not found');
+    console.log('👤 User role:', session?.user?.role || 'No role');
     
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    if (!['ADMIN', 'MANAGER', 'OWNER'].includes(session.user.role)) {
-      return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 });
+    if (!session || session.user.role !== 'ADMIN') {
+      console.log('❌ Unauthorized access attempt');
+      return NextResponse.json(
+        { error: 'Unauthorized - Admin access required' },
+        { status: 401 }
+      );
     }
 
     // Return course creation form data or available instructors
@@ -40,14 +43,17 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('📋 Course creation POST request received');
     const session = await getServerSession(authOptions);
+    console.log('📋 Session:', session ? 'Found' : 'Not found');
+    console.log('👤 User role:', session?.user?.role || 'No role');
     
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    if (!['ADMIN', 'MANAGER', 'OWNER'].includes(session.user.role)) {
-      return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 });
+    if (!session || session.user.role !== 'ADMIN') {
+      console.log('❌ Unauthorized access attempt');
+      return NextResponse.json(
+        { error: 'Unauthorized - Admin access required' },
+        { status: 401 }
+      );
     }
 
     const body = await request.json();
