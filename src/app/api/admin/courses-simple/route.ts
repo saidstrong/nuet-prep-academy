@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import courseStorage from '@/lib/courseStorage';
 
 export async function GET() {
   try {
@@ -17,10 +18,79 @@ export async function GET() {
       );
     }
 
-    console.log('✅ Admin session verified, using mock data...');
+    console.log('✅ Admin session verified, fetching courses...');
 
-    // Use mock data to avoid database issues
-    const mockCourses = [
+    // Try database first
+    let courses = [];
+    try {
+      await prisma.$connect();
+      const dbCourses = await prisma.course.findMany({
+        include: {
+          _count: {
+            select: {
+              topics: true,
+              tests: true,
+              enrollments: true
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      courses = dbCourses.map(course => ({
+        id: course.id,
+        title: course.title,
+        description: course.description,
+        instructor: course.instructor,
+        difficulty: course.difficulty,
+        estimatedHours: course.estimatedHours,
+        price: course.price,
+        duration: course.duration,
+        maxStudents: course.maxStudents,
+        status: course.status,
+        isActive: course.isActive,
+        createdAt: course.createdAt.toISOString(),
+        updatedAt: course.updatedAt.toISOString(),
+        totalTopics: course._count.topics,
+        totalTests: course._count.tests,
+        enrolledStudents: course._count.enrollments,
+        completionRate: 85 // Default completion rate
+      }));
+
+      console.log(`✅ Found ${courses.length} courses in database`);
+    } catch (dbError: any) {
+      console.log('❌ Database error, using temporary storage and mock data:', dbError.message);
+      
+      // Get courses from temporary storage
+      const tempCourses = courseStorage.getAllCourses();
+      const tempCoursesFormatted = tempCourses.map(course => ({
+        id: course.id,
+        title: course.title,
+        description: course.description,
+        instructor: course.instructor,
+        difficulty: course.difficulty,
+        estimatedHours: course.estimatedHours,
+        price: course.price,
+        duration: course.duration,
+        maxStudents: course.maxStudents,
+        status: course.status,
+        isActive: course.isActive,
+        createdAt: course.createdAt,
+        updatedAt: course.updatedAt,
+        totalTopics: 0,
+        totalTests: 0,
+        enrolledStudents: 0,
+        completionRate: 0
+      }));
+
+      courses = tempCoursesFormatted;
+      console.log(`✅ Found ${courses.length} courses in temporary storage`);
+    }
+
+    // Add mock courses if no courses found
+    if (courses.length === 0) {
+      console.log('📚 No courses found, using mock data...');
+      const mockCourses = [
       {
         id: 'course-1',
         title: 'NUET Mathematics Preparation',
@@ -116,18 +186,45 @@ export async function GET() {
         enrolledStudents: 1,
         completionRate: 90
       }
-    ];
+      ];
+      
+      courses = mockCourses;
+      console.log(`✅ Using ${courses.length} mock courses for admin`);
+    }
 
-    const courses = mockCourses;
-    console.log(`✅ Using ${courses.length} mock courses for admin`);
+    // Combine temporary storage courses with existing courses (avoid duplicates)
+    const tempCourses = courseStorage.getAllCourses();
+    const existingCourseIds = new Set(courses.map(c => c.id));
+    
+    tempCourses.forEach(tempCourse => {
+      if (!existingCourseIds.has(tempCourse.id)) {
+        courses.unshift({
+          id: tempCourse.id,
+          title: tempCourse.title,
+          description: tempCourse.description,
+          instructor: tempCourse.instructor,
+          difficulty: tempCourse.difficulty,
+          estimatedHours: tempCourse.estimatedHours,
+          price: tempCourse.price,
+          duration: tempCourse.duration,
+          maxStudents: tempCourse.maxStudents,
+          status: tempCourse.status,
+          isActive: tempCourse.isActive,
+          createdAt: tempCourse.createdAt,
+          updatedAt: tempCourse.updatedAt,
+          totalTopics: 0,
+          totalTests: 0,
+          enrolledStudents: 0,
+          completionRate: 0
+        });
+      }
+    });
 
-    const coursesWithStats = courses;
-
-    console.log(`✅ Returning ${coursesWithStats.length} processed courses`);
+    console.log(`✅ Returning ${courses.length} total courses (including ${tempCourses.length} from temporary storage)`);
 
     return NextResponse.json({
       success: true,
-      courses: coursesWithStats
+      courses: courses
     });
 
   } catch (error: any) {
