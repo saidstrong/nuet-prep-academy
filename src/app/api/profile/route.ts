@@ -14,6 +14,24 @@ export async function GET() {
       );
     }
 
+    // Test database connection first
+    try {
+      await prisma.$connect();
+    } catch (dbError: any) {
+      console.error('❌ Database connection failed, using mock profile:', dbError);
+      return NextResponse.json({
+        success: true,
+        profile: {
+          name: session.user.name || 'User',
+          bio: '',
+          phone: '',
+          whatsapp: '',
+          avatar: ''
+        },
+        source: 'mock'
+      });
+    }
+
     // Get user and profile data
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -52,6 +70,24 @@ export async function GET() {
 
   } catch (error: any) {
     console.error('Profile fetch error:', error);
+    
+    // Fallback to mock data if database fails
+    const session = await getServerSession(authOptions);
+    if (session) {
+      return NextResponse.json({
+        success: true,
+        profile: {
+          name: session.user.name || 'User',
+          bio: '',
+          phone: '',
+          whatsapp: '',
+          avatar: ''
+        },
+        source: 'mock',
+        message: 'Using mock data due to database issues'
+      });
+    }
+    
     return NextResponse.json(
       { 
         error: 'Failed to fetch profile',

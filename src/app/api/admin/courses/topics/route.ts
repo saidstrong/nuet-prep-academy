@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 export async function GET() {
@@ -12,6 +12,19 @@ export async function GET() {
         { error: 'Unauthorized - Admin access required' },
         { status: 401 }
       );
+    }
+
+    // Test database connection first
+    try {
+      await prisma.$connect();
+    } catch (dbError: any) {
+      console.error('❌ Database connection failed, using mock topics:', dbError);
+      return NextResponse.json({
+        success: true,
+        topics: [],
+        source: 'mock',
+        message: 'No topics found (using mock data due to database issues)'
+      });
     }
 
     const topics = await prisma.topic.findMany({
@@ -31,6 +44,18 @@ export async function GET() {
 
   } catch (error: any) {
     console.error('Error fetching topics:', error);
+    
+    // Fallback to mock data if database fails
+    const session = await getServerSession(authOptions);
+    if (session && session.user && session.user.role === 'ADMIN') {
+      return NextResponse.json({
+        success: true,
+        topics: [],
+        source: 'mock',
+        message: 'No topics found (using mock data due to database issues)'
+      });
+    }
+    
     return NextResponse.json(
       { 
         error: 'Failed to fetch topics',

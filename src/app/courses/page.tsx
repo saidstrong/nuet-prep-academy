@@ -211,12 +211,12 @@ export default function CoursesPage() {
                             WhatsApp: +77075214911
                           </a>
                           <a 
-                            href="https://t.me/sherlockzini"
+                            href="https://t.me/MikeHawk02"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="block text-blue-600 hover:text-blue-700 font-medium"
                           >
-                            Telegram: @sherlockzini
+                            Telegram: @MikeHawk02
                           </a>
                         </div>
                       </div>
